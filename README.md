@@ -81,6 +81,38 @@ npm run tauri build
 # Output in: src-tauri/target/release/bundle/
 ```
 
+### Platforms
+
+| Platform | Output |
+|----------|--------|
+| Windows  | `.exe` (NSIS installer), `.msi` |
+| macOS    | `.dmg`, `.app` (universal binary) |
+| Linux    | `.deb`, `.rpm`, `.AppImage` |
+| iOS      | `.ipa` (requires Apple Developer Team ID) |
+
+## GitHub Releases (CI/CD)
+
+Releases are built automatically on every `v*` tag push by `.github/workflows/release.yml`.
+
+### Automatic builds
+
+```bash
+git tag v1.0.3
+git push origin v1.0.3
+```
+
+GitHub Actions will build and attach binaries for Windows, macOS, and Linux.
+
+### iOS builds
+
+iOS requires an Apple Developer Team ID to sign the app. Set it as a repository secret:
+
+1. Go to **Settings → Secrets and variables → Actions → New repository secret**
+2. Name: `APPLE_DEVELOPMENT_TEAM`
+3. Value: Your Apple Developer Team ID (found in the Apple Developer portal)
+
+The iOS job skips gracefully if the secret is not set. With it set, it produces a signed `.ipa`.
+
 ## WhatsApp Integration
 
 The app includes a Go sidecar that uses the [whatsmeow](https://github.com/tulir/whatsmeow) library to connect to WhatsApp Web without a browser.

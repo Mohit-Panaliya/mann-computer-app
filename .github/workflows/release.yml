@@ -82,16 +82,30 @@ jobs:
         run: npm install
 
       - name: Initialize iOS project
-        run: npm run tauri ios init
+        run: |
+          if [ -z "${APPLE_DEVELOPMENT_TEAM}" ]; then
+            echo "::warning::APPLE_DEVELOPMENT_TEAM secret is not set. Skipping iOS build."
+            echo "Set the APPLE_DEVELOPMENT_TEAM secret to build and sign the iOS app."
+            exit 0
+          fi
+          npm run tauri ios init -- --config "{\"bundle\":{\"iOS\":{\"developmentTeam\":\"${APPLE_DEVELOPMENT_TEAM}\"}}}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPLE_DEVELOPMENT_TEAM: ${{ secrets.APPLE_DEVELOPMENT_TEAM }}
 
       - name: Build iOS app
-        run: npm run tauri ios build
+        run: |
+          if [ -z "${APPLE_DEVELOPMENT_TEAM}" ]; then
+            echo "::warning::Skipping iOS build - no Apple Developer Team configured."
+            exit 0
+          fi
+          npm run tauri ios build -- --config "{\"bundle\":{\"iOS\":{\"developmentTeam\":\"${APPLE_DEVELOPMENT_TEAM}\"}}}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPLE_DEVELOPMENT_TEAM: ${{ secrets.APPLE_DEVELOPMENT_TEAM }}
 
       - name: Upload iOS artifacts
+        if: ${{ env.APPLE_DEVELOPMENT_TEAM != '' }}
         uses: actions/upload-artifact@v4
         with:
           name: mann-computer-ios
