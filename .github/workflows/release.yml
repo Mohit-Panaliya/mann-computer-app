@@ -15,11 +15,8 @@ jobs:
       matrix:
         include:
           - platform: macos-latest
-            args: "--target aarch64-apple-darwin"
-            name: macos-arm64
-          - platform: macos-13
-            args: "--target x86_64-apple-darwin"
-            name: macos-x64
+            args: "--target universal-apple-darwin"
+            name: macos-universal
           - platform: ubuntu-22.04
             args: ""
             name: linux-x64
@@ -37,6 +34,10 @@ jobs:
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Rust targets (macOS universal)
+        if: matrix.name == 'macos-universal'
+        run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
 
       - name: Install dependencies (ubuntu only)
         if: matrix.platform == 'ubuntu-22.04'
@@ -75,12 +76,12 @@ jobs:
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios
+          targets: aarch64-apple-ios
 
       - name: Install frontend dependencies
         run: npm install
 
-      - name: Initialize iOS target
+      - name: Initialize iOS project
         run: npm run tauri ios init
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -97,4 +98,5 @@ jobs:
           path: |
             src-tauri/target/aarch64-apple-ios/release/bundle/**/*.ipa
             src-tauri/gen/apple/**/*.ipa
+            src-tauri/gen/apple/build/**/*.app
           if-no-files-found: warn
