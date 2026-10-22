@@ -11,6 +11,8 @@
   import LaptopQuotes from './pages/LaptopQuotes.svelte';
   import Customers from './pages/Customers.svelte';
   import { api } from './lib/api';
+  import Button from '$lib/components/ui/button.svelte';
+  import Badge from '$lib/components/ui/badge.svelte';
 
   type Page = 'dashboard' | 'inward' | 'quotations' | 'repairs' | 'billing' | 'delivery' | 'parts' | 'cctv' | 'laptop' | 'customers';
 
@@ -38,37 +40,33 @@
   });
 </script>
 
-<div class="flex h-screen overflow-hidden bg-gray-50">
-  <nav class="w-64 bg-white border-r border-gray-200 flex flex-col z-20 shadow-sm">
-    <div class="p-5 border-b border-gray-200">
-      <div class="flex items-center gap-2">
-        <div class="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center text-white font-bold">MC</div>
-        <h1 class="text-sm font-bold text-gray-900 tracking-tight">{shopName}</h1>
+<div class="flex h-screen overflow-hidden bg-background">
+  <nav class="w-64 bg-border border-r flex flex-col z-20 shadow-sm">
+    <div class="p-5 border-b">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-primary flex items-center justify-center text-white font-bold">MC</div>
+        <h1 class="text-sm font-bold text-foreground tracking-tight">{shopName}</h1>
       </div>
-      <p class="text-[10px] text-gray-500 mt-1">Computer Repair &amp; Sales</p>
+      <p class="text-[10px] text-muted-foreground uppercase tracking-wider font-medium mt-1">Computer Repair &amp; Sales</p>
     </div>
     <div class="flex-1 overflow-y-auto py-3">
       {#each navItems as item}
-        <button
-          class="sidebar-item"
-          class:sidebar-item-active={currentPage === item.id}
-          on:click={() => currentPage = item.id}
-        >
-          <span class="text-lg">{item.icon}</span>
+        <Button variant={currentPage === item.id ? 'default' : 'ghost'} size="sm" class="w-full justify-start" on:click={() => currentPage = item.id}>
+          <span class="mr-3 text-lg">{item.icon}</span>
           <span>{item.label}</span>
-        </button>
+        </Button>
       {/each}
     </div>
-    <div class="p-4 border-t border-gray-200 bg-gray-50">
-      <div class="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mb-2">SETTINGS</div>
-      <button class="sidebar-item text-gray-600 hover:bg-gray-100 hover:text-gray-900">
-        <span class="text-lg">⚙️</span>
+    <div class="p-4 border-t bg-muted">
+      <div class="text-[10px] text-muted-foreground uppercase tracking-wider font-medium mb-2">Settings</div>
+      <Button variant="ghost" size="sm" class="w-full justify-start">
+        <span class="mr-3 text-lg">⚙️</span>
         <span>Settings</span>
-      </button>
+      </Button>
     </div>
   </nav>
 
-  <main class="flex-1 overflow-y-auto bg-gray-50">
+  <main class="flex-1 overflow-y-auto bg-background">
     <div class="p-6">
       {#if currentPage === 'dashboard'}
         <Dashboard on:navigate={(e) => currentPage = e.detail} />

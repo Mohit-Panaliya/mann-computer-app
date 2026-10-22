@@ -1,6 +1,15 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { api } from '../lib/api';
+  import Card from '$lib/components/ui/card.svelte';
+  import CardContent from '$lib/components/ui/card-content.svelte';
+  import CardHeader from '$lib/components/ui/card-header.svelte';
+  import CardTitle from '$lib/components/ui/card-title.svelte';
+  import Button from '$lib/components/ui/button.svelte';
+  import Input from '$lib/components/ui/input.svelte';
+  import Label from '$lib/components/ui/label.svelte';
+  import Textarea from '$lib/components/ui/textarea.svelte';
+  import Dialog from '$lib/components/ui/dialog.svelte';
 
   let customers: any[] = [];
   let showForm = false;
@@ -37,21 +46,17 @@
         await api.createCustomer(formName, formPhone, formAddress || null);
       }
       showForm = false;
-      resetForm();
+      editingId = '';
+      formName = '';
+      formPhone = '';
+      formAddress = '';
       await loadData();
-    } catch (e) {
+    } catch (e: any) {
       console.error('Failed to save customer', e);
       alert('Failed: ' + (e?.message || String(e)));
     } finally {
       loading = false;
     }
-  }
-
-  function resetForm() {
-    editingId = '';
-    formName = '';
-    formPhone = '';
-    formAddress = '';
   }
 
   function edit(c: any) {
@@ -66,74 +71,78 @@
 <div>
   <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
     <div>
-      <h1 class="text-2xl font-bold text-gray-900">Customers</h1>
-      <p class="text-gray-600 mt-1">Manage your customer database</p>
+      <h1 class="text-2xl font-bold text-foreground">Customers</h1>
+      <p class="text-muted-foreground mt-1">Manage your customer database</p>
     </div>
-    <button class="btn btn-primary" on:click={() => { resetForm(); showForm = true; }}>
+    <Button variant="default" on:click={() => { editingId = ''; showForm = true; }}>
       <span class="mr-2">+</span> Add Customer
-    </button>
+    </Button>
   </div>
 
-  <div class="card overflow-x-auto">
-    <table class="w-full text-sm">
-      <thead>
-        <tr class="table-header">
-          <th class="text-left">Name</th>
-          <th class="text-left w-40">Phone</th>
-          <th class="text-left">Address</th>
-          <th class="text-right w-32">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {#each customers as c}
-          <tr class="hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0">
-            <td class="text-gray-700 font-medium">{c.name}</td>
-            <td class="text-gray-600 font-mono text-sm">{c.phone}</td>
-            <td class="text-gray-600 truncate max-w-xs" title={c.address || '-'}>{c.address || '-'}</td>
-            <td class="text-right">
-              <button class="btn btn-ghost btn-sm text-primary-600 hover:bg-primary-50" on:click={() => edit(c)} title="Edit">
-                <span class="text-lg">✏️</span>
-              </button>
-            </td>
-          </tr>
-        {:else}
-          <tr>
-            <td colspan="4" class="text-center py-8 text-gray-500">No customers found.</td>
-          </tr>
-        {/each}
-      </tbody>
-    </table>
-  </div>
+  <Card>
+    <CardContent class="p-0">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-border text-left text-xs font-semibold text-muted-foreground">
+              <th class="py-3">Name</th>
+              <th class="w-40 py-3">Phone</th>
+              <th class="py-3">Address</th>
+              <th class="w-32 py-3 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {#each customers as c}
+              <tr class="hover:bg-muted transition-colors border-b border-border last:border-0">
+                <td class="py-3 text-sm font-medium text-foreground">{c.name}</td>
+                <td class="py-3 text-sm text-muted-foreground font-mono">{c.phone}</td>
+                <td class="py-3 text-sm text-muted-foreground truncate max-w-xs" title={c.address || '-'}>{c.address || '-'}</td>
+                <td class="py-3 text-right">
+                  <Button variant="ghost" size="sm" class="p-2 text-primary-600 hover:bg-primary-50" on:click={() => edit(c)} title="Edit">
+                    <span class="text-lg">✏️</span>
+                  </Button>
+                </td>
+              </tr>
+            {:else}
+              <tr>
+                <td colspan="4" class="py-8 text-center text-muted-foreground">No customers found.</td>
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      </div>
+    </CardContent>
+  </Card>
 
   {#if showForm}
-    <div class="modal-overlay" on:click|self={() => showForm = false}>
-      <div class="modal max-w-md">
+    <div class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" >
+      <div class="bg-background border border-input rounded-xl shadow-xl w-full max-w-md p-6" role="dialog" aria-modal="true">
         <div class="flex justify-between items-start mb-4">
-          <h2 class="text-lg font-bold text-gray-900">{editingId ? 'Edit' : 'Add'} Customer</h2>
-          <button class="text-gray-400 hover:text-gray-600 text-2xl" on:click={() => showForm = false}>&times;</button>
+          <h2 class="text-lg font-bold text-foreground">{editingId ? 'Edit' : 'Add'} Customer</h2>
+          <button on:click={() => showForm = false} class="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+            <span class="sr-only">Close</span>
+            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293-4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+          </button>
         </div>
-        
+
         <form on:submit|preventDefault={save} class="space-y-4">
           <div class="space-y-2">
-            <label class="label">Customer Name</label>
-            <input class="input" bind:value={formName} placeholder="Customer name" required />
+            <Label>Customer Name</Label>
+            <Input bind:value={formName} placeholder="Customer name" required />
           </div>
-
           <div class="space-y-2">
-            <label class="label">Phone Number</label>
-            <input class="input" type="tel" bind:value={formPhone} placeholder="e.g. 9876543210" required />
+            <Label>Phone Number</Label>
+            <Input type="tel" bind:value={formPhone} placeholder="e.g. 9876543210" required />
           </div>
-
           <div class="space-y-2">
-            <label class="label">Address</label>
-            <textarea class="input" bind:value={formAddress} rows="2" placeholder="Customer address..."></textarea>
+            <Label>Address</Label>
+            <Textarea bind:value={formAddress} rows="2" placeholder="Customer address..." />
           </div>
-
           <div class="flex justify-end gap-3 pt-4">
-            <button type="button" class="btn btn-outline" on:click={() => showForm = false}>Cancel</button>
-            <button type="submit" class="btn btn-primary" disabled={loading}>
+            <Button variant="outline" on:click={() => showForm = false}>Cancel</Button>
+            <Button variant="default" disabled={loading}>
               {loading ? 'Saving...' : 'Save Customer'}
-            </button>
+            </Button>
           </div>
         </form>
       </div>

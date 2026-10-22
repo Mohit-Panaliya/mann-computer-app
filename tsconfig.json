@@ -8,7 +8,14 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "lib": ["ESNext", "DOM"],
-    "types": ["vite/client"]
+    "types": ["vite/client"],
+    "baseUrl": ".",
+    "paths": {
+      "$lib/*": ["src/lib/*"],
+      "$lib/components/*": ["src/lib/components/*"],
+      "$lib/components/ui/*": ["src/lib/components/ui/*"],
+      "$utils/*": ["src/lib/utils/*"]
+    }
   },
   "include": ["src/**/*.ts", "src/**/*.js", "src/**/*.svelte"],
   "exclude": ["node_modules", "dist"]

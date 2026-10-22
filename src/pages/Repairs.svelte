@@ -1,7 +1,18 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { api } from '../lib/api';
-  import { getStatusClass, getStatusLabel } from '../lib/utils';
+  import { getStatusLabel, getStatusVariant } from '../lib/utils';
+  import Card from '$lib/components/ui/card.svelte';
+  import CardContent from '$lib/components/ui/card-content.svelte';
+  import CardHeader from '$lib/components/ui/card-header.svelte';
+  import CardTitle from '$lib/components/ui/card-title.svelte';
+  import Badge from '$lib/components/ui/badge.svelte';
+  import Button from '$lib/components/ui/button.svelte';
+  import Input from '$lib/components/ui/input.svelte';
+  import Label from '$lib/components/ui/label.svelte';
+  import Select from '$lib/components/ui/select.svelte';
+  import Dialog from '$lib/components/ui/dialog.svelte';
+  import Textarea from '$lib/components/ui/textarea.svelte';
 
   let repairs: any[] = [];
   let slips: any[] = [];
@@ -12,7 +23,6 @@
   let formDiagnosis = '';
   let formLaborCost = 0;
   let formTechnician = '';
-  let formPartsUsed = '';
 
   onMount(loadData);
 
@@ -36,9 +46,11 @@
     try {
       await api.createRepair(formInwardId, null, formDiagnosis || null, formLaborCost, formTechnician || null);
       showForm = false;
-      resetForm();
+      formDiagnosis = '';
+      formLaborCost = 0;
+      formTechnician = '';
       await loadData();
-    } catch (e) {
+    } catch (e: any) {
       console.error('Failed to create repair', e);
       alert('Failed: ' + (e?.message || String(e)));
     } finally {
@@ -46,20 +58,11 @@
     }
   }
 
-  function resetForm() {
-    formInwardId = '';
-    formDiagnosis = '';
-    formLaborCost = 0;
-    formTechnician = '';
-    formPartsUsed = '';
-  }
-
   async function updateStatus(r: any, status: string) {
-    const today = new Date().toISOString().slice(0, 10);
     try {
-      await api.updateRepair(r.id, status, r.diagnosis, r.parts_used, r.labor_cost, r.total_cost, status === 'completed' || status === 'ready_for_delivery' ? today : null);
+      await api.updateRepair(r.id, status, r.diagnosis, r.parts_used, r.labor_cost, r.total_cost, status === 'completed' || status === 'ready_for_delivery' ? new Date().toISOString().slice(0, 10) : null);
       await loadData();
-    } catch (e) {
+    } catch (e: any) {
       console.error('Failed to update repair', e);
       alert('Failed: ' + (e?.message || String(e)));
     }
@@ -73,101 +76,101 @@
 <div>
   <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
     <div>
-      <h1 class="text-2xl font-bold text-gray-900">Repairs</h1>
-      <p class="text-gray-600 mt-1">Track repair progress from start to delivery</p>
+      <h1 class="text-2xl font-bold text-foreground">Repairs</h1>
+      <p class="text-muted-foreground mt-1">Track repair progress from start to delivery</p>
     </div>
-    <button class="btn btn-primary" on:click={() => { showForm = true; }}>
+    <Button variant="default" on:click={() => showForm = true}>
       <span class="mr-2">+</span> New Repair
-    </button>
+    </Button>
   </div>
 
-  <div class="card overflow-x-auto">
-    <table class="w-full text-sm">
-      <thead>
-        <tr class="table-header">
-          <th class="text-left w-24">Inward Slip</th>
-          <th class="text-left">Diagnosis</th>
-          <th class="text-right w-24">Cost</th>
-          <th class="text-left w-32">Technician</th>
-          <th class="text-center w-32">Status</th>
-          <th class="text-right w-32">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {#each repairs as r}
-          <tr class="hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0">
-            <td>
-              <div class="text-gray-700 font-mono text-sm font-medium">{getSlip(r.inward_id)?.slip_no || '-'}</div>
-              <div class="text-xs text-gray-500">{getSlip(r.inward_id)?.customer_name || '-'}</div>
-            </td>
-            <td class="text-gray-700">{r.diagnosis || 'Pending diagnosis'}</td>
-            <td class="text-right text-gray-700 font-medium">₹{r.total_cost.toFixed(2)}</td>
-            <td class="text-gray-600">{r.technician || '-'}</td>
-            <td class="text-center">
-              <span class="badge {getStatusClass(r.status)}">{getStatusLabel(r.status)}</span>
-            </td>
-            <td class="text-right">
-              <div class="flex items-center gap-1.5 justify-end">
-                {#if r.status === 'in_progress'}
-                  <button class="btn btn-primary btn-sm" on:click={() => updateStatus(r, 'completed')}>Complete</button>
-                  <button class="btn btn-success btn-sm" on:click={() => updateStatus(r, 'ready_for_delivery')}>Ready</button>
-                {/if}
-              </div>
-            </td>
-          </tr>
-        {:else}
-          <tr>
-            <td colspan="6" class="text-center py-8 text-gray-500">No repairs found.</td>
-          </tr>
-        {/each}
-      </tbody>
-    </table>
-  </div>
+  <Card>
+    <CardContent class="p-0">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-border text-left text-xs font-semibold text-muted-foreground">
+              <th class="w-24 py-3">Inward Slip</th>
+              <th class="py-3">Diagnosis</th>
+              <th class="w-24 py-3 text-right">Cost</th>
+              <th class="w-32 py-3">Technician</th>
+              <th class="w-32 py-3 text-center">Status</th>
+              <th class="w-24 py-3 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {#each repairs as r}
+              <tr class="hover:bg-muted transition-colors border-b border-border last:border-0">
+                <td>
+                  <div class="text-sm font-mono font-medium text-foreground">{getSlip(r.inward_id)?.slip_no || '-'}</div>
+                  <div class="text-xs text-muted-foreground">{getSlip(r.inward_id)?.customer_name || '-'}</div>
+                </td>
+                <td class="py-3 text-sm text-muted-foreground">{r.diagnosis || 'Pending diagnosis'}</td>
+                <td class="py-3 text-sm font-medium text-foreground text-right">₹{r.total_cost.toFixed(2)}</td>
+                <td class="py-3 text-sm text-muted-foreground">{r.technician || '-'}</td>
+                <td class="py-3 text-center"><Badge variant={getStatusVariant(r.status)} class="text-xs">{getStatusLabel(r.status)}</Badge></td>
+                <td class="py-3 text-right">
+                  <div class="flex items-center gap-2 justify-end">
+                    {#if r.status === 'in_progress'}
+                      <Button variant="secondary" size="sm" class="px-3" on:click={() => updateStatus(r, 'completed')}>Complete</Button>
+                      <Button variant="default" size="sm" class="px-3" on:click={() => updateStatus(r, 'ready_for_delivery')}>Ready</Button>
+                    {/if}
+                  </div>
+                </td>
+              </tr>
+            {:else}
+              <tr>
+                <td colspan="6" class="py-8 text-center text-muted-foreground">No repairs found.</td>
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      </div>
+    </CardContent>
+  </Card>
 
   {#if showForm}
-    <div class="modal-overlay" on:click|self={() => showForm = false}>
-      <div class="modal max-w-md">
+    <div class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" >
+      <div class="bg-background border border-input rounded-xl shadow-xl w-full max-w-md p-6" role="dialog" aria-modal="true">
         <div class="flex justify-between items-start mb-4">
-          <h2 class="text-lg font-bold text-gray-900">New Repair</h2>
-          <button class="text-gray-400 hover:text-gray-600 text-2xl" on:click={() => showForm = false}>&times;</button>
+          <h2 class="text-lg font-bold text-foreground">New Repair</h2>
+          <button on:click={() => showForm = false} class="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+            <span class="sr-only">Close</span>
+            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293-4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+          </button>
         </div>
-        
+
         <form on:submit|preventDefault={createRepair} class="space-y-4">
           <div class="space-y-2">
-            <label class="label">Inward Slip</label>
-            <select class="input" bind:value={formInwardId}>
+            <Label>Inward Slip</Label>
+            <Select bind:value={formInwardId}>
               <option value="">Select inward slip...</option>
               {#each slips.filter((s: any) => s.status === 'pending' || s.status === 'repairing') as s}
                 <option value={s.id}>#{s.slip_no} - {s.customer_name} ({s.device_type})</option>
               {/each}
-            </select>
+            </Select>
           </div>
 
           <div class="space-y-2">
-            <label class="label">Diagnosis</label>
-            <textarea class="input" bind:value={formDiagnosis} rows="3" placeholder="Describe the diagnosis..."></textarea>
+            <Label>Diagnosis</Label>
+            <Textarea bind:value={formDiagnosis} rows="3" placeholder="Describe the diagnosis..." />
           </div>
 
           <div class="space-y-2">
-            <label class="label">Labor Cost (₹)</label>
-            <input class="input" type="number" bind:value={formLaborCost} placeholder="0" />
+            <Label>Labor Cost (₹)</Label>
+            <Input type="number" bind:value={formLaborCost} placeholder="0" />
           </div>
 
           <div class="space-y-2">
-            <label class="label">Technician</label>
-            <input class="input" bind:value={formTechnician} placeholder="Technician name" />
-          </div>
-
-          <div class="space-y-2">
-            <label class="label">Parts Used</label>
-            <input class="input" bind:value={formPartsUsed} placeholder="e.g. Screen, Battery" />
+            <Label>Technician</Label>
+            <Input bind:value={formTechnician} placeholder="Technician name" />
           </div>
 
           <div class="flex justify-end gap-3 pt-4">
-            <button type="button" class="btn btn-outline" on:click={() => showForm = false}>Cancel</button>
-            <button type="submit" class="btn btn-success" disabled={loading}>
+            <Button variant="outline" on:click={() => showForm = false}>Cancel</Button>
+            <Button variant="default" disabled={loading}>
               {loading ? 'Starting...' : 'Start Repair'}
-            </button>
+            </Button>
           </div>
         </form>
       </div>

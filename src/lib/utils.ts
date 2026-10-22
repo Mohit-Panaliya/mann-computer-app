@@ -58,3 +58,20 @@ export function generateWhatsAppLink(phone: string, message: string): string {
   const withCountry = cleaned.startsWith('91') ? cleaned : `91${cleaned}`;
   return `https://wa.me/${withCountry}?text=${encodeURIComponent(message)}`;
 }
+
+export function getStatusVariant(status: string): string {
+  const variants: Record<string, string> = {
+    pending: 'outline',
+    repairing: 'default',
+    ready: 'secondary',
+    delivered: 'outline',
+    completed: 'secondary',
+    in_progress: 'default',
+    draft: 'outline',
+    sent: 'default',
+    approved: 'secondary',
+    rejected: 'destructive',
+    paid: 'secondary',
+  };
+  return variants[status] || 'outline';
+}
