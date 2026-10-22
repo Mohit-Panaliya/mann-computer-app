@@ -38,53 +38,59 @@
   });
 </script>
 
-<div class="layout">
-  <nav class="sidebar">
-    <div class="sidebar-header">
-      <div class="sidebar-title">{shopName}</div>
+<div class="flex h-screen overflow-hidden bg-gray-50">
+  <nav class="w-64 bg-white border-r border-gray-200 flex flex-col z-20 shadow-sm">
+    <div class="p-5 border-b border-gray-200">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center text-white font-bold">MC</div>
+        <h1 class="text-sm font-bold text-gray-900 tracking-tight">{shopName}</h1>
+      </div>
+      <p class="text-[10px] text-gray-500 mt-1">Computer Repair &amp; Sales</p>
     </div>
-    <div class="sidebar-nav">
+    <div class="flex-1 overflow-y-auto py-3">
       {#each navItems as item}
-        <div
-          class="nav-item"
-          class:active={currentPage === item.id}
+        <button
+          class="sidebar-item"
+          class:sidebar-item-active={currentPage === item.id}
           on:click={() => currentPage = item.id}
         >
-          <span>{item.icon}</span>
+          <span class="text-lg">{item.icon}</span>
           <span>{item.label}</span>
-        </div>
+        </button>
       {/each}
+    </div>
+    <div class="p-4 border-t border-gray-200 bg-gray-50">
+      <div class="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mb-2">SETTINGS</div>
+      <button class="sidebar-item text-gray-600 hover:bg-gray-100 hover:text-gray-900">
+        <span class="text-lg">⚙️</span>
+        <span>Settings</span>
+      </button>
     </div>
   </nav>
 
-  <main class="main-content">
-    {#if currentPage === 'dashboard'}
-      <Dashboard on:navigate={(e) => currentPage = e.detail} />
-    {:else if currentPage === 'inward'}
-      <InwardSlips />
-    {:else if currentPage === 'quotations'}
-      <Quotations />
-    {:else if currentPage === 'repairs'}
-      <Repairs />
-    {:else if currentPage === 'billing'}
-      <Billing />
-    {:else if currentPage === 'delivery'}
-      <Delivery />
-    {:else if currentPage === 'parts'}
-      <PartsInventory />
-    {:else if currentPage === 'cctv'}
-      <CctvQuotes />
-    {:else if currentPage === 'laptop'}
-      <LaptopQuotes />
-    {:else if currentPage === 'customers'}
-      <Customers />
-    {/if}
+  <main class="flex-1 overflow-y-auto bg-gray-50">
+    <div class="p-6">
+      {#if currentPage === 'dashboard'}
+        <Dashboard on:navigate={(e) => currentPage = e.detail} />
+      {:else if currentPage === 'inward'}
+        <InwardSlips />
+      {:else if currentPage === 'quotations'}
+        <Quotations />
+      {:else if currentPage === 'repairs'}
+        <Repairs />
+      {:else if currentPage === 'billing'}
+        <Billing />
+      {:else if currentPage === 'delivery'}
+        <Delivery />
+      {:else if currentPage === 'parts'}
+        <PartsInventory />
+      {:else if currentPage === 'cctv'}
+        <CctvQuotes />
+      {:else if currentPage === 'laptop'}
+        <LaptopQuotes />
+      {:else if currentPage === 'customers'}
+        <Customers />
+      {/if}
+    </div>
   </main>
 </div>
-
-<style>
-  .layout {
-    display: flex;
-    height: 100vh;
-  }
-</style>

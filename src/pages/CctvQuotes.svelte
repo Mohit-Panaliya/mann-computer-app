@@ -1,46 +1,16 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { api, CctvQuote, QuotationItem } from '../lib/api';
+  import { api } from '../lib/api';
   import { formatCurrency, generateWhatsAppLink } from '../lib/utils';
 
-  let quotes: CctvQuote[] = [];
+  let quotes: any[] = [];
   let showForm = false;
+  let loading = false;
 
   let formName = '';
   let formPhone = '';
-  let formItems: QuotationItem[] = [{ description: '', quantity: 1, unit_price: 0, total: 0 }];
+  let formItems: any[] = [{ description: '', quantity: 1, unit_price: 0, total: 0 }];
   let formNotes = '';
-
-  onMount(async () => {
-    quotes = await api.getCctvQuotes();
-  });
-
-  function addItem() {
-    formItems = [...formItems, { description: '', quantity: 1, unit_price: 0, total: 0 }];
-  }
-
-  function removeItem(i: number) {
-    formItems = formItems.filter((_, idx) => idx !== i);
-  }
-
-  function updateItemTotal(i: number) {
-    formItems[i].total = formItems[i].quantity * formItems[i].unit_price;
-    formItems = [...formItems];
-  }
-
-  async function createQuote() {
-    const items = formItems.filter(i => i.description && i.quantity > 0);
-    await api.createCctvQuote(formName, formPhone, items, formNotes || null);
-    showForm = false;
-    formItems = [{ description: '', quantity: 1, unit_price: 0, total: 0 }];
-    quotes = await api.getCctvQuotes();
-  }
-
-  async function sendWhatsApp(q: CctvQuote) {
-    const itemsList = q.items.map(i => `${i.description} x${i.quantity} = ${formatCurrency(i.total)}`).join('\n');
-    const msg = `CCTV Quote from Mann Computer\nQuote No: ${q.quote_no}\n\n${itemsList}\n\nTotal: ${formatCurrency(q.total_amount)}`;
-    window.open(generateWhatsAppLink(q.customer_phone || '', msg), '_blank');
-  }
 
   const commonItems = [
     'Hikvision 2MP Bullet Camera',
@@ -57,28 +27,114 @@
     'RG59 Cable (per meter)',
     'Installation Charges',
   ];
+
+  onMount(async () => {
+    loading = true;
+    try {
+      quotes = await api.getCctvQuotes();
+    } catch (e) {
+      console.error('Failed to load CCTV quotes', e);
+    } finally {
+      loading = false;
+    }
+  });
+
+  function addItem() {
+    formItems = [...formItems, { description: '', quantity: 1, unit_price: 0, total: 0 }];
+  }
+
+  function removeItem(i: number) {
+    formItems = formItems.filter((_, idx) => idx !== i);
+  }
+
+  function updateItemTotal(i: number) {
+    formItems[i].total = formItems[i].quantity * formItems[i].unit_price;
+    formItems = [...formItems];
+  }
+
+  function getGrandTotal() {
+    return formItems.reduce((sum, i) => sum + i.total, 0);
+  }
+
+  async function createQuote() {
+    const validItems = formItems.filter(i => i.description && i.quantity > 0 && i.unit_price >= 0);
+    if (validItems.length === 0) {
+      alert('Please add at least one item');
+      return;
+    }
+    if (!formName || !formPhone) {
+      alert('Please enter customer name and phone');
+      return;
+    }
+
+    loading = true;
+    try {
+      await api.createCctvQuote(formName, formPhone, validItems, formNotes || null);
+      showForm = false;
+      resetForm();
+      loading = false;
+      quotes = await api.getCctvQuotes();
+    } catch (e) {
+      console.error('Failed to create CCTV quote', e);
+      alert('Failed to create quote');
+      loading = false;
+    }
+  }
+
+  function resetForm() {
+    formName = '';
+    formPhone = '';
+    formItems = [{ description: '', quantity: 1, unit_price: 0, total: 0 }];
+    formNotes = '';
+  }
+
+  async function sendWhatsApp(q: any) {
+    const itemsList = q.items.map((i: any) => `${i.description} x${i.quantity} = ${formatCurrency(i.total)}`).join('\n');
+    const msg = `CCTV Quote from Mann Computer\nQuote No: ${q.quote_no}\n\n${itemsList}\n\nTotal: ${formatCurrency(q.total_amount)}`;
+    window.open(generateWhatsAppLink(q.customer_phone || '', msg), '_blank');
+  }
 </script>
 
 <div>
-  <div class="page-header">
-    <h1 class="page-title">CCTV Quotes</h1>
-    <button class="btn btn-primary" on:click={() => showForm = true}>+ New Quote</button>
+  <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">CCTV Quotes</h1>
+      <p class="text-gray-600 mt-1">Create quotations for CCTV camera systems</p>
+    </div>
+    <button class="btn btn-primary" on:click={() => { showForm = true; }}>
+      <span class="mr-2">+</span> New Quote
+    </button>
   </div>
 
-  <div class="card">
-    <table>
-      <thead><tr><th>Quote No</th><th>Customer</th><th>Phone</th><th>Items</th><th>Total</th><th>Actions</th></tr></thead>
+  <div class="card overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="table-header">
+          <th class="text-left w-24">Quote No</th>
+          <th class="text-left">Customer</th>
+          <th class="text-left w-32">Phone</th>
+          <th class="text-center w-20">Items</th>
+          <th class="text-right w-24">Total</th>
+          <th class="text-right w-32">Actions</th>
+        </tr>
+      </thead>
       <tbody>
         {#each quotes as q}
-          <tr>
-            <td>{q.quote_no}</td>
-            <td>{q.customer_name}</td>
-            <td>{q.customer_phone}</td>
-            <td>{q.items.length}</td>
-            <td>{formatCurrency(q.total_amount)}</td>
-            <td class="actions">
-              <button class="btn btn-sm btn-outline" on:click={() => sendWhatsApp(q)}>WA Send</button>
+          <tr class="hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0">
+            <td class="text-gray-700 font-mono text-sm font-medium">{q.quote_no}</td>
+            <td class="text-gray-700 font-medium">{q.customer_name}</td>
+            <td class="text-gray-600">{q.customer_phone}</td>
+            <td class="text-center text-gray-600">{q.items.length}</td>
+            <td class="text-right text-gray-700 font-medium">{formatCurrency(q.total_amount)}</td>
+            <td class="text-right">
+              <button class="btn btn-ghost btn-sm text-green-600 hover:bg-green-50" on:click={() => sendWhatsApp(q)} title="Send WhatsApp">
+                <span class="text-lg">💬</span>
+              </button>
             </td>
+          </tr>
+        {:else}
+          <tr>
+            <td colspan="6" class="text-center py-8 text-gray-500">No CCTV quotes found.</td>
           </tr>
         {/each}
       </tbody>
@@ -87,45 +143,69 @@
 
   {#if showForm}
     <div class="modal-overlay" on:click|self={() => showForm = false}>
-      <div class="modal">
-        <div class="modal-header">
-          <h2 class="modal-title">New CCTV Quote</h2>
-          <button class="close-btn" on:click={() => showForm = false}>&times;</button>
+      <div class="modal max-w-2xl">
+        <div class="flex justify-between items-start mb-4">
+          <h2 class="text-lg font-bold text-gray-900">New CCTV Quote</h2>
+          <button class="text-gray-400 hover:text-gray-600 text-2xl" on:click={() => showForm = false}>&times;</button>
         </div>
-        <div class="form-group"><label class="form-label">Customer Name</label><input class="input" bind:value={formName} /></div>
-        <div class="form-group"><label class="form-label">Phone</label><input class="input" bind:value={formPhone} /></div>
-        <div class="items-section">
-          <label class="form-label">Items</label>
-          <div class="quick-items">
-            {#each commonItems as item}
-              <button class="quick-item" on:click={() => { formItems = [...formItems, { description: item, quantity: 1, unit_price: 0, total: 0 }]; }}>{item}</button>
-            {/each}
-          </div>
-          {#each formItems as item, i}
-            <div class="item-row">
-              <input class="input" placeholder="Description" bind:value={item.description} />
-              <input class="input" type="number" placeholder="Qty" bind:value={item.quantity} on:change={() => updateItemTotal(i)} />
-              <input class="input" type="number" placeholder="Rate" bind:value={item.unit_price} on:change={() => updateItemTotal(i)} />
-              <span class="item-total">{formatCurrency(item.total)}</span>
-              <button class="btn btn-sm btn-danger" on:click={() => removeItem(i)}>X</button>
+        
+        <form on:submit|preventDefault={createQuote} class="space-y-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div class="space-y-2">
+              <label class="label">Customer Name</label>
+              <input class="input" bind:value={formName} placeholder="Customer name" required />
             </div>
-          {/each}
-          <button class="btn btn-sm btn-outline" on:click={addItem}>+ Add Item</button>
-        </div>
-        <div class="form-group"><label class="form-label">Notes</label><input class="input" bind:value={formNotes} /></div>
-        <button class="btn btn-primary" on:click={createQuote}>Create Quote</button>
+            <div class="space-y-2">
+              <label class="label">Phone Number</label>
+              <input class="input" type="tel" bind:value={formPhone} placeholder="e.g. 9876543210" required />
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <label class="label">Quick Add Items</label>
+            <div class="flex flex-wrap gap-2 mb-2">
+              {#each commonItems as item}
+                <button type="button" class="px-3 py-1.5 text-xs border border-gray-200 rounded-lg bg-white hover:bg-primary-50 hover:text-primary-600 transition-colors" on:click={() => {
+                  formItems = [...formItems, { description: item, quantity: 1, unit_price: 0, total: 0 }];
+                }}>
+                  {item}
+                </button>
+              {/each}
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <label class="label">Items</label>
+            <div class="space-y-2">
+              {#each formItems as item, i}
+                <div class="flex gap-2 items-start">
+                  <input class="input flex-1" placeholder="Description" bind:value={item.description} />
+                  <input class="input w-20" type="number" placeholder="Qty" bind:value={item.quantity} on:change={() => updateItemTotal(i)} />
+                  <input class="input w-24" type="number" placeholder="Rate" bind:value={item.unit_price} on:change={() => updateItemTotal(i)} />
+                  <span class="w-20 text-right font-medium text-gray-700">{formatCurrency(item.total)}</span>
+                  <button class="btn btn-danger btn-sm p-1.5" on:click={() => removeItem(i)}>×</button>
+                </div>
+              {/each}
+              <button type="button" class="btn btn-outline btn-sm text-gray-600" on:click={addItem}>+ Add Item</button>
+            </div>
+            <div class="mt-2 text-right">
+              <div class="text-lg font-bold text-gray-900">Grand Total: <span class="text-primary-600">{formatCurrency(getGrandTotal())}</span></div>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <label class="label">Notes</label>
+            <input class="input" bind:value={formNotes} placeholder="Additional notes..." />
+          </div>
+
+          <div class="flex justify-end gap-3 pt-4">
+            <button type="button" class="btn btn-outline" on:click={() => showForm = false}>Cancel</button>
+            <button type="submit" class="btn btn-primary" disabled={loading}>
+              {loading ? 'Creating...' : 'Create Quote'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   {/if}
 </div>
-
-<style>
-  .actions { display: flex; gap: 4px; }
-  .item-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
-  .item-row .input { flex: 1; }
-  .item-total { min-width: 80px; text-align: right; font-weight: 600; }
-  .items-section { margin: 12px 0; }
-  .quick-items { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 12px; }
-  .quick-item { padding: 4px 8px; font-size: 11px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg); cursor: pointer; }
-  .quick-item:hover { background: #e8f0fe; }
-</style>

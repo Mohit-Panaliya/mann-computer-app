@@ -32,7 +32,6 @@ export function getStatusLabel(status: string): string {
     approved: 'Approved',
     rejected: 'Rejected',
     paid: 'Paid',
-    pending: 'Pending',
   };
   return labels[status] || status;
 }
