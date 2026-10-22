@@ -186,7 +186,8 @@ impl Db {
     pub fn next_slip_no(&self) -> DbResult<String> {
         let conn = self.lock_conn()?;
         let mut stmt = conn.prepare("SELECT value FROM settings WHERE key = 'inward_counter'").map_err(|e| e.to_string())?;
-        let counter: i64 = stmt.query_row([], |row| row.get(0)).map_err(|e| e.to_string())?;
+        let counter_str: String = stmt.query_row([], |row| row.get(0)).map_err(|e| e.to_string())?;
+        let counter: i64 = counter_str.parse().unwrap_or(0);
         conn.execute("UPDATE settings SET value = ?1 WHERE key = 'inward_counter'", params![(counter + 1).to_string()]).map_err(|e| e.to_string())?;
         Ok(format!("{:04}", counter + 1))
     }
@@ -194,7 +195,8 @@ impl Db {
     pub fn next_quotation_no(&self) -> DbResult<String> {
         let conn = self.lock_conn()?;
         let mut stmt = conn.prepare("SELECT value FROM settings WHERE key = 'quotation_counter'").map_err(|e| e.to_string())?;
-        let counter: i64 = stmt.query_row([], |row| row.get(0)).map_err(|e| e.to_string())?;
+        let counter_str: String = stmt.query_row([], |row| row.get(0)).map_err(|e| e.to_string())?;
+        let counter: i64 = counter_str.parse().unwrap_or(0);
         conn.execute("UPDATE settings SET value = ?1 WHERE key = 'quotation_counter'", params![(counter + 1).to_string()]).map_err(|e| e.to_string())?;
         Ok(format!("Q{:04}", counter + 1))
     }
@@ -202,7 +204,8 @@ impl Db {
     pub fn next_bill_no(&self) -> DbResult<String> {
         let conn = self.lock_conn()?;
         let mut stmt = conn.prepare("SELECT value FROM settings WHERE key = 'bill_counter'").map_err(|e| e.to_string())?;
-        let counter: i64 = stmt.query_row([], |row| row.get(0)).map_err(|e| e.to_string())?;
+        let counter_str: String = stmt.query_row([], |row| row.get(0)).map_err(|e| e.to_string())?;
+        let counter: i64 = counter_str.parse().unwrap_or(0);
         conn.execute("UPDATE settings SET value = ?1 WHERE key = 'bill_counter'", params![(counter + 1).to_string()]).map_err(|e| e.to_string())?;
         Ok(format!("B{:04}", counter + 1))
     }
@@ -210,7 +213,8 @@ impl Db {
     pub fn next_cctv_quote_no(&self) -> DbResult<String> {
         let conn = self.lock_conn()?;
         let mut stmt = conn.prepare("SELECT value FROM settings WHERE key = 'cctv_quote_counter'").map_err(|e| e.to_string())?;
-        let counter: i64 = stmt.query_row([], |row| row.get(0)).map_err(|e| e.to_string())?;
+        let counter_str: String = stmt.query_row([], |row| row.get(0)).map_err(|e| e.to_string())?;
+        let counter: i64 = counter_str.parse().unwrap_or(0);
         conn.execute("UPDATE settings SET value = ?1 WHERE key = 'cctv_quote_counter'", params![(counter + 1).to_string()]).map_err(|e| e.to_string())?;
         Ok(format!("CCTV{:04}", counter + 1))
     }
@@ -218,7 +222,8 @@ impl Db {
     pub fn next_laptop_quote_no(&self) -> DbResult<String> {
         let conn = self.lock_conn()?;
         let mut stmt = conn.prepare("SELECT value FROM settings WHERE key = 'laptop_quote_counter'").map_err(|e| e.to_string())?;
-        let counter: i64 = stmt.query_row([], |row| row.get(0)).map_err(|e| e.to_string())?;
+        let counter_str: String = stmt.query_row([], |row| row.get(0)).map_err(|e| e.to_string())?;
+        let counter: i64 = counter_str.parse().unwrap_or(0);
         conn.execute("UPDATE settings SET value = ?1 WHERE key = 'laptop_quote_counter'", params![(counter + 1).to_string()]).map_err(|e| e.to_string())?;
         Ok(format!("LT{:04}", counter + 1))
     }
