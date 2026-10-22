@@ -47,7 +47,7 @@
       quotes = await api.getLaptopQuotes();
     } catch (e) {
       console.error('Failed to create laptop quote', e);
-      alert('Failed to create quote');
+      alert('Failed: ' + (e?.message || String(e)));
       loading = false;
     }
   }

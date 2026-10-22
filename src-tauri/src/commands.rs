@@ -22,8 +22,12 @@ impl AppState {
 }
 
 #[tauri::command]
-pub fn health_check() -> Result<String, String> {
-    Ok("ok".to_string())
+pub fn health_check(state: State<AppState>) -> Result<String, String> {
+    // Test database connectivity
+    let conn = state.db.lock_conn().map_err(|e| e.to_string())?;
+    let count: i64 = conn.query_row("SELECT COUNT(*) FROM inward_slips", [], |r| r.get(0))
+        .map_err(|e| format!("Database query failed: {}", e))?;
+    Ok(format!("ok - database connected, {} inward slips", count))
 }
 
 #[tauri::command]

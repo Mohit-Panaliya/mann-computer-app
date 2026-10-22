@@ -28,7 +28,7 @@
       await loadData();
     } catch (e) {
       console.error('Failed to mark delivered', e);
-      alert('Failed to mark as delivered');
+      alert('Failed: ' + (e?.message || String(e)));
     }
   }
 

@@ -41,7 +41,7 @@
       await loadData();
     } catch (e) {
       console.error('Failed to save customer', e);
-      alert('Failed to save customer');
+      alert('Failed: ' + (e?.message || String(e)));
     } finally {
       loading = false;
     }

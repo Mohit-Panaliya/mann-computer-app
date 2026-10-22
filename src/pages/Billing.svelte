@@ -75,7 +75,7 @@
       await loadData();
     } catch (e) {
       console.error('Failed to create bill', e);
-      alert('Failed to create bill');
+      alert('Failed: ' + (e?.message || String(e)));
     } finally {
       loading = false;
     }
@@ -94,7 +94,7 @@
       await loadData();
     } catch (e) {
       console.error('Failed to mark paid', e);
-      alert('Failed to update payment');
+      alert('Failed: ' + (e?.message || String(e)));
     }
   }
 
@@ -110,7 +110,7 @@
       window.open(`file://${path}`, '_blank');
     } catch (e) {
       console.error('Failed to generate PDF', e);
-      alert('Failed to generate PDF');
+      alert('Failed: ' + (e?.message || String(e)));
     }
   }
 </script>

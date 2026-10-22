@@ -52,9 +52,9 @@
       showForm = false;
       resetForm();
       await loadData();
-    } catch (e) {
+    } catch (e: any) {
       console.error('Failed to create slip', e);
-      alert('Failed to create inward slip');
+      alert('Failed to create inward slip: ' + (e?.message || String(e)));
     } finally {
       loading = false;
     }
@@ -74,9 +74,9 @@
     try {
       await api.updateInwardSlipStatus(s.id, status);
       await loadData();
-    } catch (e) {
+    } catch (e: any) {
       console.error('Failed to update status', e);
-      alert('Failed to update status');
+      alert('Failed: ' + (e?.message || String(e)));
     }
   }
 

@@ -41,7 +41,7 @@
       await loadData();
     } catch (e) {
       console.error('Failed to create part', e);
-      alert('Failed to add part');
+      alert('Failed: ' + (e?.message || String(e)));
     }
   }
 
@@ -66,7 +66,7 @@
       await loadData();
     } catch (e) {
       console.error('Failed to record sale', e);
-      alert('Failed to record sale');
+      alert('Failed: ' + (e?.message || String(e)));
     }
   }
 

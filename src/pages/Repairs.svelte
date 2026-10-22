@@ -40,7 +40,7 @@
       await loadData();
     } catch (e) {
       console.error('Failed to create repair', e);
-      alert('Failed to start repair');
+      alert('Failed: ' + (e?.message || String(e)));
     } finally {
       loading = false;
     }
@@ -61,7 +61,7 @@
       await loadData();
     } catch (e) {
       console.error('Failed to update repair', e);
-      alert('Failed to update status');
+      alert('Failed: ' + (e?.message || String(e)));
     }
   }
 

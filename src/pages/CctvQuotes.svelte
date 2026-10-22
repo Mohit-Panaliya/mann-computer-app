@@ -76,7 +76,7 @@
       quotes = await api.getCctvQuotes();
     } catch (e) {
       console.error('Failed to create CCTV quote', e);
-      alert('Failed to create quote');
+      alert('Failed: ' + (e?.message || String(e)));
       loading = false;
     }
   }

@@ -63,7 +63,7 @@
       await loadData();
     } catch (e) {
       console.error('Failed to create quotation', e);
-      alert('Failed to create quotation');
+      alert('Failed: ' + (e?.message || String(e)));
     } finally {
       loading = false;
     }
