@@ -13,8 +13,11 @@ fn main() {
         .setup(|app| {
             let app_data_dir = app.path().app_data_dir()
                 .unwrap_or_else(|_| std::path::PathBuf::from("."));
-            std::fs::create_dir_all(&app_data_dir).ok();
+            if let Err(e) = std::fs::create_dir_all(&app_data_dir) {
+                eprintln!("Failed to create app data dir: {}", e);
+            }
             let db_path = app_data_dir.join("mann_computer.db");
+            eprintln!("Database path: {:?}", db_path);
             let state = commands::AppState::new(db_path).expect("Failed to initialize database");
             app.manage(state);
             Ok(())
@@ -49,6 +52,7 @@ fn main() {
             commands::generate_pdf,
             commands::get_settings,
             commands::update_setting,
+            commands::health_check,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

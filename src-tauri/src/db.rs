@@ -1,22 +1,24 @@
-use rusqlite::{Connection, Result, params};
+use rusqlite::{Connection, params};
 use std::path::PathBuf;
 use std::sync::Mutex;
 use chrono::Local;
+
+pub type DbResult<T> = Result<T, String>;
 
 pub struct Db {
     pub conn: Mutex<Connection>,
 }
 
 impl Db {
-    pub fn new(db_path: PathBuf) -> Result<Self> {
-        let conn = Connection::open(&db_path)?;
+    pub fn new(db_path: PathBuf) -> DbResult<Self> {
+        let conn = Connection::open(&db_path).map_err(|e| e.to_string())?;
         let db = Db { conn: Mutex::new(conn) };
         db.init()?;
         Ok(db)
     }
 
-    fn init(&self) -> Result<()> {
-        let conn = self.conn.lock().unwrap();
+    fn init(&self) -> DbResult<()> {
+        let conn = self.conn.lock().map_err(|e| e.to_string())?;
         conn.execute_batch(
             r#"
             CREATE TABLE IF NOT EXISTS settings (
@@ -173,64 +175,68 @@ impl Db {
                 ('tax_rate', '18'),
                 ('currency', 'INR');
             "#
-        )?;
+        ).map_err(|e| e.to_string())?;
         Ok(())
     }
 
-    pub fn next_slip_no(&self) -> Result<String> {
-        let conn = self.conn.lock().unwrap();
-        let mut stmt = conn.prepare("SELECT value FROM settings WHERE key = 'inward_counter'")?;
-        let counter: i64 = stmt.query_row([], |row| row.get(0))?;
-        conn.execute("UPDATE settings SET value = ?1 WHERE key = 'inward_counter'", params![(counter + 1).to_string()])?;
+    pub fn lock_conn(&self) -> DbResult<std::sync::MutexGuard<'_, Connection>> {
+        self.conn.lock().map_err(|e| e.to_string())
+    }
+
+    pub fn next_slip_no(&self) -> DbResult<String> {
+        let conn = self.lock_conn()?;
+        let mut stmt = conn.prepare("SELECT value FROM settings WHERE key = 'inward_counter'").map_err(|e| e.to_string())?;
+        let counter: i64 = stmt.query_row([], |row| row.get(0)).map_err(|e| e.to_string())?;
+        conn.execute("UPDATE settings SET value = ?1 WHERE key = 'inward_counter'", params![(counter + 1).to_string()]).map_err(|e| e.to_string())?;
         Ok(format!("{:04}", counter + 1))
     }
 
-    pub fn next_quotation_no(&self) -> Result<String> {
-        let conn = self.conn.lock().unwrap();
-        let mut stmt = conn.prepare("SELECT value FROM settings WHERE key = 'quotation_counter'")?;
-        let counter: i64 = stmt.query_row([], |row| row.get(0))?;
-        conn.execute("UPDATE settings SET value = ?1 WHERE key = 'quotation_counter'", params![(counter + 1).to_string()])?;
+    pub fn next_quotation_no(&self) -> DbResult<String> {
+        let conn = self.lock_conn()?;
+        let mut stmt = conn.prepare("SELECT value FROM settings WHERE key = 'quotation_counter'").map_err(|e| e.to_string())?;
+        let counter: i64 = stmt.query_row([], |row| row.get(0)).map_err(|e| e.to_string())?;
+        conn.execute("UPDATE settings SET value = ?1 WHERE key = 'quotation_counter'", params![(counter + 1).to_string()]).map_err(|e| e.to_string())?;
         Ok(format!("Q{:04}", counter + 1))
     }
 
-    pub fn next_bill_no(&self) -> Result<String> {
-        let conn = self.conn.lock().unwrap();
-        let mut stmt = conn.prepare("SELECT value FROM settings WHERE key = 'bill_counter'")?;
-        let counter: i64 = stmt.query_row([], |row| row.get(0))?;
-        conn.execute("UPDATE settings SET value = ?1 WHERE key = 'bill_counter'", params![(counter + 1).to_string()])?;
+    pub fn next_bill_no(&self) -> DbResult<String> {
+        let conn = self.lock_conn()?;
+        let mut stmt = conn.prepare("SELECT value FROM settings WHERE key = 'bill_counter'").map_err(|e| e.to_string())?;
+        let counter: i64 = stmt.query_row([], |row| row.get(0)).map_err(|e| e.to_string())?;
+        conn.execute("UPDATE settings SET value = ?1 WHERE key = 'bill_counter'", params![(counter + 1).to_string()]).map_err(|e| e.to_string())?;
         Ok(format!("B{:04}", counter + 1))
     }
 
-    pub fn next_cctv_quote_no(&self) -> Result<String> {
-        let conn = self.conn.lock().unwrap();
-        let mut stmt = conn.prepare("SELECT value FROM settings WHERE key = 'cctv_quote_counter'")?;
-        let counter: i64 = stmt.query_row([], |row| row.get(0))?;
-        conn.execute("UPDATE settings SET value = ?1 WHERE key = 'cctv_quote_counter'", params![(counter + 1).to_string()])?;
+    pub fn next_cctv_quote_no(&self) -> DbResult<String> {
+        let conn = self.lock_conn()?;
+        let mut stmt = conn.prepare("SELECT value FROM settings WHERE key = 'cctv_quote_counter'").map_err(|e| e.to_string())?;
+        let counter: i64 = stmt.query_row([], |row| row.get(0)).map_err(|e| e.to_string())?;
+        conn.execute("UPDATE settings SET value = ?1 WHERE key = 'cctv_quote_counter'", params![(counter + 1).to_string()]).map_err(|e| e.to_string())?;
         Ok(format!("CCTV{:04}", counter + 1))
     }
 
-    pub fn next_laptop_quote_no(&self) -> Result<String> {
-        let conn = self.conn.lock().unwrap();
-        let mut stmt = conn.prepare("SELECT value FROM settings WHERE key = 'laptop_quote_counter'")?;
-        let counter: i64 = stmt.query_row([], |row| row.get(0))?;
-        conn.execute("UPDATE settings SET value = ?1 WHERE key = 'laptop_quote_counter'", params![(counter + 1).to_string()])?;
+    pub fn next_laptop_quote_no(&self) -> DbResult<String> {
+        let conn = self.lock_conn()?;
+        let mut stmt = conn.prepare("SELECT value FROM settings WHERE key = 'laptop_quote_counter'").map_err(|e| e.to_string())?;
+        let counter: i64 = stmt.query_row([], |row| row.get(0)).map_err(|e| e.to_string())?;
+        conn.execute("UPDATE settings SET value = ?1 WHERE key = 'laptop_quote_counter'", params![(counter + 1).to_string()]).map_err(|e| e.to_string())?;
         Ok(format!("LT{:04}", counter + 1))
     }
 
-    pub fn get_setting(&self, key: &str) -> Result<Option<String>> {
-        let conn = self.conn.lock().unwrap();
-        let mut stmt = conn.prepare("SELECT value FROM settings WHERE key = ?1")?;
-        let mut rows = stmt.query(params![key])?;
-        if let Some(row) = rows.next()? {
-            Ok(Some(row.get(0)?))
+    pub fn get_setting(&self, key: &str) -> DbResult<Option<String>> {
+        let conn = self.lock_conn()?;
+        let mut stmt = conn.prepare("SELECT value FROM settings WHERE key = ?1").map_err(|e| e.to_string())?;
+        let mut rows = stmt.query(params![key]).map_err(|e| e.to_string())?;
+        if let Some(row) = rows.next().map_err(|e| e.to_string())? {
+            Ok(Some(row.get(0).map_err(|e| e.to_string())?))
         } else {
             Ok(None)
         }
     }
 
-    pub fn set_setting(&self, key: &str, value: &str) -> Result<()> {
-        let conn = self.conn.lock().unwrap();
-        conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)", params![key, value])?;
+    pub fn set_setting(&self, key: &str, value: &str) -> DbResult<()> {
+        let conn = self.lock_conn()?;
+        conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)", params![key, value]).map_err(|e| e.to_string())?;
         Ok(())
     }
 }
