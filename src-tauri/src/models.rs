@@ -166,3 +166,54 @@ pub struct DashboardStats {
     pub today_revenue: f64,
     pub parts_in_stock: i64,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AnalyticsData {
+    pub total_inward: i64,
+    pub pending_repair: i64,
+    pub ready_for_delivery: i64,
+    pub delivered: i64,
+    pub total_bills: i64,
+    pub pending_bills: i64,
+    pub paid_bills: i64,
+    pub total_revenue: f64,
+    pub today_revenue: f64,
+    pub week_revenue: f64,
+    pub month_revenue: f64,
+    pub parts_in_stock: i64,
+    pub parts_sold: i64,
+    pub total_customers: i64,
+    pub total_repairs: i64,
+    pub completed_repairs: i64,
+    pub total_quotations: i64,
+    pub total_cctv_quotes: i64,
+    pub total_laptop_quotes: i64,
+    pub revenue_by_day: Vec<RevenueByDay>,
+    pub status_distribution: Vec<StatusCount>,
+    pub payment_distribution: Vec<PaymentCount>,
+    pub device_type_distribution: Vec<DeviceCount>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RevenueByDay {
+    pub date: String,
+    pub amount: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StatusCount {
+    pub status: String,
+    pub count: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PaymentCount {
+    pub status: String,
+    pub count: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DeviceCount {
+    pub device_type: String,
+    pub count: i64,
+}

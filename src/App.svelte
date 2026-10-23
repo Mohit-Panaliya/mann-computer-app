@@ -9,12 +9,13 @@
   import PartsInventory from './pages/PartsInventory.svelte';
   import CctvQuotes from './pages/CctvQuotes.svelte';
   import LaptopQuotes from './pages/LaptopQuotes.svelte';
-  import Customers from './pages/Customers.svelte';
+  import Analytics from './pages/Analytics.svelte';
+  import Settings from './pages/Settings.svelte';
   import { api } from './lib/api';
   import Button from '$lib/components/ui/button.svelte';
   import Badge from '$lib/components/ui/badge.svelte';
 
-  type Page = 'dashboard' | 'inward' | 'quotations' | 'repairs' | 'billing' | 'delivery' | 'parts' | 'cctv' | 'laptop' | 'customers';
+  type Page = 'dashboard' | 'inward' | 'quotations' | 'repairs' | 'billing' | 'delivery' | 'parts' | 'cctv' | 'laptop' | 'customers' | 'analytics' | 'settings';
 
   let currentPage: Page = 'dashboard';
   let shopName = 'Mann Computer';
@@ -29,7 +30,9 @@
     { id: 'parts', label: 'Parts Inventory', icon: '📦' },
     { id: 'cctv', label: 'CCTV Quotes', icon: '📷' },
     { id: 'laptop', label: 'Laptop Quotes', icon: '💻' },
+    { id: 'analytics', label: 'Analytics', icon: '📈' },
     { id: 'customers', label: 'Customers', icon: '👥' },
+    { id: 'settings', label: 'Settings', icon: '⚙️' },
   ];
 
   onMount(async () => {
@@ -86,9 +89,13 @@
         <CctvQuotes />
       {:else if currentPage === 'laptop'}
         <LaptopQuotes />
-      {:else if currentPage === 'customers'}
-        <Customers />
-      {/if}
+    {:else if currentPage === 'customers'}
+      <Customers />
+    {:else if currentPage === 'analytics'}
+      <Analytics />
+    {:else if currentPage === 'settings'}
+      <Settings />
+    {/if}
     </div>
   </main>
 </div>

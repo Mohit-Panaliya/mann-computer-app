@@ -397,18 +397,107 @@ pub fn create_delivery(state: State<AppState>, inward_id: String, bill_id: Optio
 }
 
 #[tauri::command]
+pub fn get_analytics(state: State<AppState>) -> Result<AnalyticsData, String> {
+    let conn = state.db.lock_conn().map_err(|e| e.to_string())?;
+    
+    let total_inward: i64 = conn.query_row("SELECT COUNT(*) FROM inward_slips", [], |r| r.get(0)).map_err(|e| e.to_string())?;
+    let pending_repair: i64 = conn.query_row("SELECT COUNT(*) FROM inward_slips WHERE status='repairing'", [], |r| r.get(0)).map_err(|e| e.to_string())?;
+    let ready_for_delivery: i64 = conn.query_row("SELECT COUNT(*) FROM inward_slips WHERE status='ready'", [], |r| r.get(0)).map_err(|e| e.to_string())?;
+    let delivered: i64 = conn.query_row("SELECT COUNT(*) FROM inward_slips WHERE status='delivered'", [], |r| r.get(0)).map_err(|e| e.to_string())?;
+    
+    let total_bills: i64 = conn.query_row("SELECT COUNT(*) FROM bills", [], |r| r.get(0)).map_err(|e| e.to_string())?;
+    let pending_bills: i64 = conn.query_row("SELECT COUNT(*) FROM bills WHERE payment_status='pending'", [], |r| r.get(0)).map_err(|e| e.to_string())?;
+    let paid_bills: i64 = conn.query_row("SELECT COUNT(*) FROM bills WHERE payment_status='paid'", [], |r| r.get(0)).map_err(|e| e.to_string())?;
+    let total_revenue: f64 = conn.query_row("SELECT COALESCE(SUM(total_amount), 0) FROM bills WHERE payment_status='paid'", [], |r| r.get(0)).map_err(|e| e.to_string())?;
+    
+    let today = Local::now().format("%Y-%m-%d").to_string();
+    let today_revenue: f64 = conn.query_row("SELECT COALESCE(SUM(total_amount), 0) FROM bills WHERE payment_status='paid' AND created_at LIKE ?1", params![format!("{}%", today)], |r| r.get(0)).map_err(|e| e.to_string())?;
+    
+    let week_start = Local::now().naive_local().date() - chrono::Duration::days(7);
+    let week_revenue: f64 = conn.query_row("SELECT COALESCE(SUM(total_amount), 0) FROM bills WHERE payment_status='paid' AND created_at >= ?1", params![week_start.format("%Y-%m-%d").to_string()], |r| r.get(0)).map_err(|e| e.to_string())?;
+    
+    let month_start = Local::now().naive_local().date() - chrono::Duration::days(30);
+    let month_revenue: f64 = conn.query_row("SELECT COALESCE(SUM(total_amount), 0) FROM bills WHERE payment_status='paid' AND created_at >= ?1", params![month_start.format("%Y-%m-%d").to_string()], |r| r.get(0)).map_err(|e| e.to_string())?;
+    
+    let parts_in_stock: i64 = conn.query_row("SELECT COALESCE(SUM(stock_quantity), 0) FROM parts", [], |r| r.get(0)).map_err(|e| e.to_string())?;
+    let parts_sold: i64 = conn.query_row("SELECT COALESCE(SUM(quantity), 0) FROM part_sales", [], |r| r.get(0)).map_err(|e| e.to_string())?;
+    
+    let total_customers: i64 = conn.query_row("SELECT COUNT(*) FROM customers", [], |r| r.get(0)).map_err(|e| e.to_string())?;
+    let total_repairs: i64 = conn.query_row("SELECT COUNT(*) FROM repairs", [], |r| r.get(0)).map_err(|e| e.to_string())?;
+    let completed_repairs: i64 = conn.query_row("SELECT COUNT(*) FROM repairs WHERE status='completed' OR status='ready_for_delivery'", [], |r| r.get(0)).map_err(|e| e.to_string())?;
+    let total_quotations: i64 = conn.query_row("SELECT COUNT(*) FROM quotations", [], |r| r.get(0)).map_err(|e| e.to_string())?;
+    let total_cctv_quotes: i64 = conn.query_row("SELECT COUNT(*) FROM cctv_quotes", [], |r| r.get(0)).map_err(|e| e.to_string())?;
+    let total_laptop_quotes: i64 = conn.query_row("SELECT COUNT(*) FROM laptop_quotes", [], |r| r.get(0)).map_err(|e| e.to_string())?;
+    
+    // Revenue by day (last 7 days)
+    let mut revenue_by_day = Vec::new();
+    for i in 0..7 {
+        let date = Local::now().naive_local().date() - chrono::Duration::days(i as i64);
+        let date_str = date.format("%Y-%m-%d").to_string();
+        let amount: f64 = conn.query_row(
+            "SELECT COALESCE(SUM(total_amount), 0) FROM bills WHERE payment_status='paid' AND created_at LIKE ?1",
+            params![format!("{}%", date_str)], |r| r.get(0)
+        ).map_err(|e| e.to_string())?;
+        revenue_by_day.push(RevenueByDay { date: date_str, amount });
+    }
+    revenue_by_day.reverse();
+    
+    // Status distribution
+    let mut status_distribution = Vec::new();
+    for status in ["pending", "repairing", "ready", "delivered", "completed"] {
+        let count: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM inward_slips WHERE status=?1",
+            params![status], |r| r.get(0)
+        ).map_err(|e| e.to_string())?;
+        if count > 0 {
+            status_distribution.push(StatusCount { status: status.to_string(), count });
+        }
+    }
+    
+    // Payment distribution
+    let mut payment_distribution = Vec::new();
+    for status in ["pending", "paid"] {
+        let count: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM bills WHERE payment_status=?1",
+            params![status], |r| r.get(0)
+        ).map_err(|e| e.to_string())?;
+        if count > 0 {
+            payment_distribution.push(PaymentCount { status: status.to_string(), count });
+        }
+    }
+    
+    // Device type distribution
+    let mut device_type_distribution = Vec::new();
+    let mut stmt = conn.prepare("SELECT device_type, COUNT(*) FROM inward_slips GROUP BY device_type").map_err(|e| e.to_string())?;
+    let rows = stmt.query_map([], |row| {
+        Ok(DeviceCount { device_type: row.get(0)?, count: row.get(1)? })
+    }).map_err(|e| e.to_string())?;
+    for row in rows {
+        device_type_distribution.push(row.map_err(|e| e.to_string())?);
+    }
+    
+    Ok(AnalyticsData {
+        total_inward, pending_repair, ready_for_delivery, delivered,
+        total_bills, pending_bills, paid_bills, total_revenue,
+        today_revenue, week_revenue, month_revenue,
+        parts_in_stock, parts_sold, total_customers, total_repairs, completed_repairs,
+        total_quotations, total_cctv_quotes, total_laptop_quotes,
+        revenue_by_day, status_distribution, payment_distribution, device_type_distribution,
+    })
+}
+#[tauri::command]
 pub fn get_dashboard_stats(state: State<AppState>) -> Result<DashboardStats, String> {
     let conn = state.db.lock_conn().map_err(|e| e.to_string())?;
     let total_inward: i64 = conn.query_row("SELECT COUNT(*) FROM inward_slips", [], |r| r.get(0)).map_err(|e| e.to_string())?;
     let pending_repair: i64 = conn.query_row("SELECT COUNT(*) FROM inward_slips WHERE status='repairing'", [], |r| r.get(0)).map_err(|e| e.to_string())?;
-    let ready: i64 = conn.query_row("SELECT COUNT(*) FROM inward_slips WHERE status='ready'", [], |r| r.get(0)).map_err(|e| e.to_string())?;
+    let ready_for_delivery: i64 = conn.query_row("SELECT COUNT(*) FROM inward_slips WHERE status='ready'", [], |r| r.get(0)).map_err(|e| e.to_string())?;
     let delivered: i64 = conn.query_row("SELECT COUNT(*) FROM inward_slips WHERE status='delivered'", [], |r| r.get(0)).map_err(|e| e.to_string())?;
     let total_bills: i64 = conn.query_row("SELECT COUNT(*) FROM bills", [], |r| r.get(0)).map_err(|e| e.to_string())?;
     let pending_bills: i64 = conn.query_row("SELECT COUNT(*) FROM bills WHERE payment_status='pending'", [], |r| r.get(0)).map_err(|e| e.to_string())?;
     let today = Local::now().format("%Y-%m-%d").to_string();
     let today_revenue: f64 = conn.query_row("SELECT COALESCE(SUM(total_amount), 0) FROM bills WHERE payment_status='paid' AND created_at LIKE ?1", params![format!("{}%", today)], |r| r.get(0)).map_err(|e| e.to_string())?;
     let parts_in_stock: i64 = conn.query_row("SELECT COALESCE(SUM(stock_quantity), 0) FROM parts", [], |r| r.get(0)).map_err(|e| e.to_string())?;
-    Ok(DashboardStats { total_inward, pending_repair, ready_for_delivery: ready, delivered, total_bills, pending_bills, today_revenue, parts_in_stock })
+    Ok(DashboardStats { total_inward, pending_repair, ready_for_delivery, delivered, total_bills, pending_bills, today_revenue, parts_in_stock })
 }
 
 #[tauri::command]
@@ -481,4 +570,50 @@ pub fn get_settings(state: State<AppState>) -> Result<std::collections::HashMap<
 #[tauri::command]
 pub fn update_setting(state: State<AppState>, key: String, value: String) -> Result<(), String> {
     state.db.set_setting(&key, &value).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn backup_database(state: State<AppState>) -> Result<String, String> {
+    let conn = state.db.lock_conn().map_err(|e| e.to_string())?;
+    let backup_dir = state.db.get_setting("backup_dir").ok().flatten().unwrap_or_else(|| "/tmp".to_string());
+    let backup_path = format!("{}/mann_computer_backup_{}.db", backup_dir, Local::now().format("%Y%m%d_%H%M%S"));
+    conn.execute(&format!("VACUUM INTO '{}'", backup_path), []).map_err(|e| format!("Backup failed: {}", e))?;
+    Ok(backup_path)
+}
+
+#[tauri::command]
+pub fn restore_database(state: State<AppState>, backup_path: String) -> Result<(), String> {
+    if !std::path::Path::new(&backup_path).exists() {
+        return Err("Backup file not found".to_string());
+    }
+    let conn = state.db.lock_conn().map_err(|e| e.to_string())?;
+    // Close current connection and copy backup
+    drop(conn);
+    std::fs::copy(&backup_path, "mann_computer.db").map_err(|e| format!("Restore failed: {}", e))?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn export_settings(state: State<AppState>) -> Result<String, String> {
+    let conn = state.db.lock_conn().map_err(|e| e.to_string())?;
+    let mut stmt = conn.prepare("SELECT key, value FROM settings").map_err(|e| e.to_string())?;
+    let rows = stmt.query_map([], |row| {
+        Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+    }).map_err(|e| e.to_string())?;
+    let mut map = std::collections::HashMap::new();
+    for row in rows {
+        let (k, v) = row.map_err(|e| e.to_string())?;
+        map.insert(k, v);
+    }
+    serde_json::to_string_pretty(&map).map_err(|e| format!("Export failed: {}", e))
+}
+
+#[tauri::command]
+pub fn import_settings(state: State<AppState>, settings_json: String) -> Result<(), String> {
+    let settings: std::collections::HashMap<String, String> = serde_json::from_str(&settings_json).map_err(|e| format!("Invalid JSON: {}", e))?;
+    let conn = state.db.lock_conn().map_err(|e| e.to_string())?;
+    for (key, value) in settings {
+        conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)", params![key, value]).map_err(|e| format!("Failed to import setting {}: {}", key, e))?;
+    }
+    Ok(())
 }
