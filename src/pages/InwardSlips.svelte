@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { api } from '../lib/api';
-  import { formatDate, generateWhatsAppLink } from '../lib/utils';
+  import { openExternal, formatDate, generateWhatsAppLink } from '../lib/utils';
   import Card from '$lib/components/ui/card.svelte';
   import CardContent from '$lib/components/ui/card-content.svelte';
   import CardHeader from '$lib/components/ui/card-header.svelte';
@@ -94,7 +94,7 @@
 
   function sendWhatsApp(s: any) {
     const msg = `Dear ${s.customer_name},\nYour ${s.device_type} has been received at Mann Computer.\nInward No: ${s.slip_no}\nDate: ${s.date}\nProblem: ${s.problem_description || 'N/A'}\n\nThank you!`;
-    window.open(generateWhatsAppLink(s.customer_phone || '', msg), '_blank');
+    openExternal(generateWhatsAppLink(s.customer_phone || '', msg));
   }
 
   function resetForm() {

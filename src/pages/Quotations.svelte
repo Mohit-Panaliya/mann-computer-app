@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { api } from '../lib/api';
-  import { formatCurrency, generateWhatsAppLink } from '../lib/utils';
+  import { openExternal, formatCurrency, generateWhatsAppLink } from '../lib/utils';
   import Card from '$lib/components/ui/card.svelte';
   import CardContent from '$lib/components/ui/card-content.svelte';
   import CardHeader from '$lib/components/ui/card-header.svelte';
@@ -85,7 +85,7 @@
     const itemsList = q.items.map((i: any) => `${i.description} x${i.quantity} = ${formatCurrency(i.total)}`).join('\n');
     const msg = `Quotation from Mann Computer\nQuote No: ${q.quotation_no}\n\n${itemsList}\n\nTotal: ${formatCurrency(q.total_amount)}`;
     const phone = slips.find((s: any) => s.id === q.inward_id)?.customer_phone || '';
-    window.open(generateWhatsAppLink(phone, msg), '_blank');
+    openExternal(generateWhatsAppLink(phone, msg));
   }
 </script>
 

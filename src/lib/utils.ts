@@ -1,3 +1,22 @@
+import { openUrl } from '@tauri-apps/plugin-opener';
+
+/**
+ * Open an external URL (WhatsApp, PDF, etc.) in a platform-aware way.
+ * Uses the Tauri opener plugin which works on desktop AND Android/iOS.
+ * Falls back to window.open if the plugin is unavailable (e.g. browser dev).
+ */
+export async function openExternal(url: string): Promise<void> {
+  try {
+    await openUrl(url);
+  } catch (e) {
+    try {
+      window.open(url, '_blank');
+    } catch (err) {
+      console.error('Failed to open URL', url, err);
+    }
+  }
+}
+
 export function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',

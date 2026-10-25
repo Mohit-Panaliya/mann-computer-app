@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { api } from '../lib/api';
-  import { formatCurrency, generateWhatsAppLink } from '../lib/utils';
+  import { openExternal, formatCurrency, generateWhatsAppLink } from '../lib/utils';
   import Card from '$lib/components/ui/card.svelte';
   import CardContent from '$lib/components/ui/card-content.svelte';
   import CardHeader from '$lib/components/ui/card-header.svelte';
@@ -106,7 +106,7 @@
   async function sendWhatsApp(b: any) {
     const itemsList = b.items.map((i: any) => `${i.description} x${i.quantity} = ${formatCurrency(i.total)}`).join('\n');
     const msg = `Bill from Mann Computer\nBill No: ${b.bill_no}\nDate: ${b.created_at}\n\n${itemsList}\n\nSubtotal: ${formatCurrency(b.subtotal)}\nTax: ${formatCurrency(b.tax)}\nTotal: ${formatCurrency(b.total_amount)}`;
-    window.open(generateWhatsAppLink(b.customer_phone || '', msg), '_blank');
+    openExternal(generateWhatsAppLink(b.customer_phone || '', msg));
   }
 </script>
 
@@ -148,7 +148,7 @@
                     {#if b.payment_status === 'pending'}
                       <Button variant="secondary" size="sm" class="px-3" on:click={() => markPaid(b)}>Mark Paid</Button>
                     {/if}
-                    <Button variant="ghost" size="sm" class="p-2" on:click={() => window.open(`file://${b.pdf_path || ''}`, '_blank')} title="PDF">
+                    <Button variant="ghost" size="sm" class="p-2" on:click={() => openExternal(`file://${b.pdf_path || ''}`)} title="PDF">
                       <span class="text-lg">📄</span>
                     </Button>
                     <Button variant="ghost" size="sm" class="p-2 text-green-600 hover:bg-green-50" on:click={() => sendWhatsApp(b)} title="WhatsApp">

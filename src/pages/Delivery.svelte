@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { api } from '../lib/api';
-  import { formatDate, generateWhatsAppLink } from '../lib/utils';
+  import { openExternal, formatDate, generateWhatsAppLink } from '../lib/utils';
   import Card from '$lib/components/ui/card.svelte';
   import CardContent from '$lib/components/ui/card-content.svelte';
   import CardHeader from '$lib/components/ui/card-header.svelte';
@@ -40,7 +40,7 @@
 
   function sendDeliveryWA(s: any) {
     const msg = `Dear ${s.customer_name},\nYour ${s.device_type} is ready for delivery.\nInward No: ${s.slip_no}\n\nPlease visit Mann Computer to collect your device.\n\nThank you!`;
-    window.open(generateWhatsAppLink(s.customer_phone || '', msg), '_blank');
+    openExternal(generateWhatsAppLink(s.customer_phone || '', msg));
   }
 
   const readySlips = slips.filter((s: any) => s.status === 'ready' || s.status === 'completed');

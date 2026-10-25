@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { api } from '../lib/api';
-  import { formatCurrency, generateWhatsAppLink } from '../lib/utils';
+  import { openExternal, formatCurrency, generateWhatsAppLink } from '../lib/utils';
   import Card from '$lib/components/ui/card.svelte';
   import CardContent from '$lib/components/ui/card-content.svelte';
   import CardHeader from '$lib/components/ui/card-header.svelte';
@@ -65,7 +65,7 @@
 
   async function sendWhatsApp(q: any) {
     const msg = `Laptop Quote from Mann Computer\nQuote No: ${q.quote_no}\nSpecs: ${q.specs}\nPrice: ${formatCurrency(q.price)}`;
-    window.open(generateWhatsAppLink(q.customer_phone || '', msg), '_blank');
+    openExternal(generateWhatsAppLink(q.customer_phone || '', msg));
   }
 </script>
 
