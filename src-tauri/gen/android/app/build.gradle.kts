@@ -19,13 +19,13 @@ val tauriProperties = Properties().apply {
 val releaseKeystorePath = System.getenv("ANDROID_KEYSTORE_PATH")
 
 android {
-    compileSdk = 35
+    compileSdk = 36
     namespace = "com.manncomputer.app"
     defaultConfig {
         manifestPlaceholders["usesCleartextTraffic"] = "false"
         applicationId = "com.manncomputer.app"
         minSdk = 24
-        targetSdk = 35
+        targetSdk = 36
         versionCode = tauriProperties.getProperty("tauri.android.versionCode", "1").toInt()
         versionName = tauriProperties.getProperty("tauri.android.versionName", "1.0")
     }

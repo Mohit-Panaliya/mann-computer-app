@@ -85,7 +85,7 @@ jobs:
           packages: platform-tools
 
       - name: Install NDK and build tools
-        run: sdkmanager "ndk;26.1.10909125" "build-tools;34.0.0" "platforms;android-35"
+        run: sdkmanager "ndk;26.1.10909125" "build-tools;34.0.0" "platforms;android-36"
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
