@@ -88,6 +88,7 @@ npm run tauri build
 | Windows  | `.exe` (NSIS installer), `.msi` |
 | macOS    | `.dmg`, `.app` (universal binary) |
 | Linux    | `.deb`, `.rpm`, `.AppImage` |
+| Android  | `.apk` (universal, signed — installable by sideloading) |
 | iOS      | `.ipa` (requires Apple Developer Team ID) |
 
 ## GitHub Releases (CI/CD)
@@ -101,7 +102,21 @@ git tag v1.0.3
 git push origin v1.0.3
 ```
 
-GitHub Actions will build and attach binaries for Windows, macOS, and Linux.
+GitHub Actions will build and attach binaries for Windows, macOS, Linux, and Android.
+
+### Android APK
+
+The Android job builds a **signed universal APK** (all ABIs: arm64-v8a, armeabi-v7a, x86, x86_64) and attaches it to the release.
+
+**Installing on a phone:**
+1. Download the `.apk` from the GitHub release (open the release page on the phone).
+2. When prompted, allow **"Install unknown apps"** for your browser/file manager.
+3. Tap the downloaded APK and install.
+
+Signing is configured via repository secrets (already set for this repo):
+`ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`.
+
+> To use your own keystore, base64-encode your `.jks`/`.keystore` and update the `ANDROID_KEYSTORE_BASE64` secret. Keep the same key across releases so Android allows in-place updates.
 
 ### iOS builds
 
