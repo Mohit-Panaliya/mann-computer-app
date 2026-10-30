@@ -1,18 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { api } from '../lib/api';
-  import { openExternal, formatCurrency, generateWhatsAppLink } from '../lib/utils';
-  import Card from '$lib/components/ui/card.svelte';
-  import CardContent from '$lib/components/ui/card-content.svelte';
-  import CardHeader from '$lib/components/ui/card-header.svelte';
-  import CardTitle from '$lib/components/ui/card-title.svelte';
-  import Badge from '$lib/components/ui/badge.svelte';
-  import Button from '$lib/components/ui/button.svelte';
-  import Input from '$lib/components/ui/input.svelte';
-  import Label from '$lib/components/ui/label.svelte';
-  import Select from '$lib/components/ui/select.svelte';
-  import Dialog from '$lib/components/ui/dialog.svelte';
-  import Textarea from '$lib/components/ui/textarea.svelte';
+  import { formatCurrency, generateWhatsAppLink } from '../lib/utils';
 
   let quotes: any[] = [];
   let customers: any[] = [];
@@ -38,33 +27,15 @@
     }
   }
 
-  function addItem() {
-    formItems = [...formItems, { description: '', quantity: 1, unit_price: 0, total: 0 }];
-  }
-
-  function removeItem(i: number) {
-    formItems = formItems.filter((_, idx) => idx !== i);
-  }
-
-  function updateItemTotal(i: number) {
-    formItems[i].total = formItems[i].quantity * formItems[i].unit_price;
-    formItems = [...formItems];
-  }
-
-  function getGrandTotal() {
-    return formItems.reduce((sum, i) => sum + i.total, 0);
-  }
+  function addItem() { formItems = [...formItems, { description: '', quantity: 1, unit_price: 0, total: 0 }]; }
+  function removeItem(i: number) { formItems = formItems.filter((_, idx) => idx !== i); }
+  function updateItemTotal(i: number) { formItems[i].total = formItems[i].quantity * formItems[i].unit_price; formItems = [...formItems]; }
+  function getGrandTotal() { return formItems.reduce((sum, i) => sum + i.total, 0); }
 
   async function createQuote() {
-    const validItems = formItems.filter(i => i.description && i.quantity > 0 && i.unit_price >= 0);
-    if (validItems.length === 0) {
-      alert('Please add at least one item');
-      return;
-    }
-    if (!formCustomerId) {
-      alert('Please select a customer');
-      return;
-    }
+    const validItems = formItems.filter(i => i.description && i.quantity > 0);
+    if (validItems.length === 0) { alert('Please add at least one item'); return; }
+    if (!formCustomerId) { alert('Please select a customer'); return; }
 
     loading = true;
     try {
@@ -85,121 +56,95 @@
     const itemsList = q.items.map((i: any) => `${i.description} x${i.quantity} = ${formatCurrency(i.total)}`).join('\n');
     const msg = `Quotation from Mann Computer\nQuote No: ${q.quotation_no}\n\n${itemsList}\n\nTotal: ${formatCurrency(q.total_amount)}`;
     const phone = slips.find((s: any) => s.id === q.inward_id)?.customer_phone || '';
-    openExternal(generateWhatsAppLink(phone, msg));
+    window.open(generateWhatsAppLink(phone, msg), '_blank');
   }
 </script>
 
 <div>
-  <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
+  <div class="page-header">
     <div>
-      <h1 class="text-2xl font-bold text-foreground">Quotations</h1>
-      <p class="text-muted-foreground mt-1">Create and manage price quotations</p>
+      <h1 class="page-title">Quotations</h1>
+      <p class="page-subtitle">Create and manage price quotations</p>
     </div>
-    <Button variant="default" on:click={() => showForm = true}>
-      <span class="mr-2">+</span> New Quotation
-    </Button>
+    <button class="btn btn-primary" on:click={() => showForm = true}>+ New Quotation</button>
   </div>
 
-  <Card>
-    <CardContent class="p-0">
-      <div class="overflow-x-auto -mx-4 sm:mx-0">
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="border-b border-border text-left text-xs font-semibold text-muted-foreground">
-              <th class="w-24 py-3">Quote No</th>
-              <th class="py-3">Customer</th>
-              <th class="w-20 py-3 text-center">Items</th>
-              <th class="w-24 py-3 text-right">Total</th>
-              <th class="w-32 py-3 text-center">Status</th>
-              <th class="w-24 py-3 text-right">Actions</th>
+  <div class="card">
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr><th>Quote No</th><th>Customer</th><th>Items</th><th>Total</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          {#each quotes as q}
+            <tr>
+              <td class="font-medium">{q.quotation_no}</td>
+              <td>{q.customer_name}</td>
+              <td>{q.items.length}</td>
+              <td class="font-medium">{formatCurrency(q.total_amount)}</td>
+              <td><span class="badge badge-draft">{q.status}</span></td>
+              <td>
+                <button class="btn btn-ghost btn-sm" on:click={() => sendWhatsApp(q)}>💬</button>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {#each quotes as q}
-              <tr class="hover:bg-muted transition-colors border-b border-border last:border-0">
-                <td class="py-3 text-sm font-mono font-medium text-foreground">{q.quotation_no}</td>
-                <td class="py-3 text-sm font-medium text-foreground">{q.customer_name}</td>
-                <td class="py-3 text-sm text-muted-foreground text-center">{q.items.length}</td>
-                <td class="py-3 text-sm font-medium text-foreground text-right">{formatCurrency(q.total_amount)}</td>
-                <td class="py-3 text-center"><Badge variant="outline" class="text-xs">{q.status}</Badge></td>
-                <td class="py-3 text-right">
-                  <Button variant="ghost" size="sm" class="p-2 text-green-600 hover:bg-green-50" on:click={() => sendWhatsApp(q)} title="Send WhatsApp">
-                    <span class="text-lg">💬</span>
-                  </Button>
-                </td>
-              </tr>
-            {:else}
-              <tr>
-                <td colspan="6" class="py-8 text-center text-muted-foreground">No quotations found.</td>
-              </tr>
-            {/each}
-          </tbody>
-        </table>
-      </div>
-    </CardContent>
-  </Card>
+          {:else}
+            <tr><td colspan="6" class="empty-state">No quotations found.</td></tr>
+          {/each}
+        </tbody>
+      </table>
+    </div>
+  </div>
 
   {#if showForm}
-    <div class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" >
-      <div class="bg-background border border-input rounded-xl shadow-xl w-full max-w-2xl p-6" role="dialog" aria-modal="true">
-        <div class="flex justify-between items-start mb-4">
-          <h2 class="text-lg font-bold text-foreground">New Quotation</h2>
-          <button on:click={() => showForm = false} class="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
-            <span class="sr-only">Close</span>
-            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293-4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
-          </button>
+    <div class="modal-overlay" on:click|self={() => showForm = false}>
+      <div class="modal" style="max-width:42rem;">
+        <div class="modal-header">
+          <h2 class="modal-title">New Quotation</h2>
+          <button class="modal-close" on:click={() => showForm = false}>&times;</button>
         </div>
-
-        <form on:submit|preventDefault={createQuote} class="space-y-4">
-          <div class="grid grid-cols-2 gap-4">
-            <div class="space-y-2">
-              <Label>Link to Inward Slip (optional)</Label>
-              <Select bind:value={formInwardId}>
+        <form on:submit|preventDefault={createQuote}>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-bottom:1rem;">
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label">Link to Inward Slip</label>
+              <select class="form-select" bind:value={formInwardId}>
                 <option value="">None</option>
                 {#each slips as s}<option value={s.id}>#{s.slip_no} - {s.customer_name}</option>{/each}
-              </Select>
+              </select>
             </div>
-            <div class="space-y-2">
-              <Label>Customer</Label>
-              <Select bind:value={formCustomerId}>
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label">Customer</label>
+              <select class="form-select" bind:value={formCustomerId}>
                 <option value="">Select customer...</option>
                 {#each customers as c}<option value={c.id}>{c.name}</option>{/each}
-              </Select>
+              </select>
             </div>
           </div>
-
-          <div class="space-y-2">
-            <Label>Items</Label>
-            <div class="space-y-2">
-              {#each formItems as item, i}
-                <div class="flex gap-2 items-start">
-                  <Input class="flex-1" placeholder="Description" bind:value={item.description} />
-                  <Input type="number" class="w-20" placeholder="Qty" bind:value={item.quantity} on:change={() => updateItemTotal(i)} />
-                  <Input type="number" class="w-24" placeholder="Rate" bind:value={item.unit_price} on:change={() => updateItemTotal(i)} />
-                  <span class="w-20 text-right font-medium text-foreground">{formatCurrency(item.total)}</span>
-                  <Button variant="destructive" size="sm" class="p-1.5" on:click={() => removeItem(i)}>×</Button>
-                </div>
-              {/each}
-              <Button variant="outline" size="sm" class="text-gray-600" on:click={addItem}>+ Add Item</Button>
-            </div>
-            <div class="mt-2 text-right">
-              <div class="text-lg font-bold text-foreground">Grand Total: <span class="text-primary">{formatCurrency(getGrandTotal())}</span></div>
-            </div>
+          <div class="form-group">
+            <label class="form-label">Items</label>
+            {#each formItems as item, i}
+              <div style="display:flex; gap:0.5rem; margin-bottom:0.5rem; align-items:center;">
+                <input class="form-input" style="flex:1;" placeholder="Description" bind:value={item.description} />
+                <input class="form-input" style="width:4rem;" type="number" placeholder="Qty" bind:value={item.quantity} on:change={() => updateItemTotal(i)} />
+                <input class="form-input" style="width:5rem;" type="number" placeholder="Rate" bind:value={item.unit_price} on:change={() => updateItemTotal(i)} />
+                <span style="width:5rem; text-align:right; font-weight:600; font-size:0.875rem;">{formatCurrency(item.total)}</span>
+                <button type="button" class="btn btn-danger btn-sm" style="padding:0.25rem 0.5rem;" on:click={() => removeItem(i)}>×</button>
+              </div>
+            {/each}
+            <button type="button" class="btn btn-secondary btn-sm" on:click={addItem}>+ Add Item</button>
           </div>
-
-          <div class="space-y-2">
-            <Label>Notes</Label>
-            <Input bind:value={formNotes} placeholder="Additional notes..." />
+          <div style="text-align:right; margin-bottom:1rem; font-size:1.125rem; font-weight:700;">Grand Total: <span style="color:var(--primary);">{formatCurrency(getGrandTotal())}</span></div>
+          <div class="form-group">
+            <label class="form-label">Notes</label>
+            <input class="form-input" bind:value={formNotes} placeholder="Additional notes..." />
           </div>
-
-          <div class="flex justify-end gap-3 pt-4">
-            <Button variant="outline" on:click={() => showForm = false}>Cancel</Button>
-            <Button variant="default" disabled={loading}>
-              {loading ? 'Creating...' : 'Create Quotation'}
-            </Button>
+          <div style="display:flex; justify-content:flex-end; gap:0.75rem; padding-top:1rem;">
+            <button type="button" class="btn btn-secondary" on:click={() => showForm = false}>Cancel</button>
+            <button type="submit" class="btn btn-primary" disabled={loading}>{loading ? 'Creating...' : 'Create Quotation'}</button>
           </div>
         </form>
       </div>
     </div>
   {/if}
 </div>
+EOF
+echo "Done"

@@ -1,14 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { api } from '../lib/api';
-  import Card from '$lib/components/ui/card.svelte';
-  import CardContent from '$lib/components/ui/card-content.svelte';
-  import CardHeader from '$lib/components/ui/card-header.svelte';
-  import CardTitle from '$lib/components/ui/card-title.svelte';
-  import Button from '$lib/components/ui/button.svelte';
-  import Input from '$lib/components/ui/input.svelte';
-  import Label from '$lib/components/ui/label.svelte';
-  import Textarea from '$lib/components/ui/textarea.svelte';
 
   let settings: any = {};
   let loading = false;
@@ -103,94 +95,83 @@
 </script>
 
 <div>
-  <div class="mb-6">
-    <h1 class="text-2xl font-bold text-foreground">Settings</h1>
-    <p class="text-muted-foreground mt-1">Manage shop configuration and data backup</p>
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Settings</h1>
+      <p class="page-subtitle">Manage shop configuration and data backup</p>
+    </div>
   </div>
 
   {#if loading}
-    <div class="flex items-center justify-center h-64">
-      <div class="flex flex-col items-center gap-2 animate-pulse">
-        <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">⚙️</div>
-        <p class="text-muted-foreground text-sm">Loading settings...</p>
-      </div>
+    <div class="empty-state">
+      <div class="empty-state-icon">⚙️</div>
+      <p>Loading settings...</p>
     </div>
   {:else}
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle class="text-sm">Shop Information</CardTitle>
-        </CardHeader>
-        <CardContent class="space-y-4">
-          <div class="space-y-2">
-            <Label>Shop Name</Label>
-            <Input bind:value={shopName} placeholder="Mann Computer" />
-          </div>
-          <div class="space-y-2">
-            <Label>Shop Address</Label>
-            <Textarea bind:value={shopAddress} rows="3" placeholder="Full address..." />
-          </div>
-          <div class="space-y-2">
-            <Label>Phone Number</Label>
-            <Input type="tel" bind:value={shopPhone} placeholder="9876543210" />
-          </div>
-          <div class="space-y-2">
-            <Label>Email</Label>
-            <Input type="email" bind:value={shopEmail} placeholder="email@example.com" />
-          </div>
-          <div class="space-y-2">
-            <Label>Tax Rate (%)</Label>
-            <Input type="number" bind:value={taxRate} placeholder="18" />
-          </div>
-          <div class="space-y-2">
-            <Label>Jurisdiction</Label>
-            <Input bind:value={jurisdiction} placeholder="Subject to Anand Jurisdiction." />
-          </div>
-          <Button variant="default" class="w-full" on:click={saveSettings} disabled={saving}>
-            {saving ? 'Saving...' : 'Save Settings'}
-          </Button>
-        </CardContent>
-      </Card>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:1.5rem;">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Shop Information</h3>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Shop Name</label>
+          <input class="form-input" bind:value={shopName} placeholder="Mann Computer" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Shop Address</label>
+          <textarea class="form-textarea" bind:value={shopAddress} placeholder="Full address..."></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Phone Number</label>
+          <input class="form-input" type="tel" bind:value={shopPhone} placeholder="9876543210" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input class="form-input" type="email" bind:value={shopEmail} placeholder="email@example.com" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tax Rate (%)</label>
+          <input class="form-input" type="number" bind:value={taxRate} placeholder="18" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Jurisdiction</label>
+          <input class="form-input" bind:value={jurisdiction} placeholder="Subject to Anand Jurisdiction." />
+        </div>
+        <button class="btn btn-primary w-full" on:click={saveSettings} disabled={saving}>
+          {saving ? 'Saving...' : 'Save Settings'}
+        </button>
+      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle class="text-sm">Data Management</CardTitle>
-        </CardHeader>
-        <CardContent class="space-y-4">
-          <div class="space-y-2">
-            <Label>Backup Database</Label>
-            <p class="text-xs text-muted-foreground mb-2">Create a backup copy of your database</p>
-            <Button variant="outline" class="w-full" on:click={backupDatabase}>
-              <span class="mr-2">💾</span> Create Backup
-            </Button>
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Data Management</h3>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Backup Database</label>
+          <p style="font-size:0.75rem; color:var(--text-muted); margin-bottom:0.5rem;">Create a backup copy of your database</p>
+          <button class="btn btn-secondary w-full" on:click={backupDatabase}>💾 Create Backup</button>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Export Settings</label>
+          <p style="font-size:0.75rem; color:var(--text-muted); margin-bottom:0.5rem;">Export shop settings as JSON file</p>
+          <button class="btn btn-secondary w-full" on:click={exportSettings}>📤 Export Settings</button>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Import Settings</label>
+          <p style="font-size:0.75rem; color:var(--text-muted); margin-bottom:0.5rem;">Import settings from a JSON file</p>
+          <button class="btn btn-secondary w-full" on:click={importSettings}>📥 Import Settings</button>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Database Info</label>
+          <div style="font-size:0.75rem; color:var(--text-muted); line-height:1.6;">
+            <p>Database: SQLite (local file)</p>
+            <p>Location: App Data Directory</p>
+            <p>Tables: customers, inward_slips, quotations, repairs, bills, parts, part_sales, cctv_quotes, laptop_quotes, delivery_records, whatsapp_messages, settings</p>
           </div>
-
-          <div class="space-y-2">
-            <Label>Export Settings</Label>
-            <p class="text-xs text-muted-foreground mb-2">Export shop settings as JSON file</p>
-            <Button variant="outline" class="w-full" on:click={exportSettings}>
-              <span class="mr-2">📤</span> Export Settings
-            </Button>
-          </div>
-
-          <div class="space-y-2">
-            <Label>Import Settings</Label>
-            <p class="text-xs text-muted-foreground mb-2">Import settings from a JSON file</p>
-            <Button variant="outline" class="w-full" on:click={importSettings}>
-              <span class="mr-2">📥</span> Import Settings
-            </Button>
-          </div>
-
-          <div class="space-y-2">
-            <Label>Database Info</Label>
-            <div class="text-xs text-muted-foreground space-y-1">
-              <p>Database: SQLite (local file)</p>
-              <p>Location: App Data Directory</p>
-              <p>Tables: customers, inward_slips, quotations, repairs, bills, parts, part_sales, cctv_quotes, laptop_quotes, delivery_records, whatsapp_messages, settings</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   {/if}
 </div>
+EOF
+echo "Done"

@@ -2,24 +2,13 @@
   import { onMount } from 'svelte';
   import { api } from '../lib/api';
   import { formatCurrency } from '../lib/utils';
-  import Card from '$lib/components/ui/card.svelte';
-  import CardContent from '$lib/components/ui/card-content.svelte';
-  import CardHeader from '$lib/components/ui/card-header.svelte';
-  import CardTitle from '$lib/components/ui/card-title.svelte';
-  import Badge from '$lib/components/ui/badge.svelte';
-  import Button from '$lib/components/ui/button.svelte';
 
   let analytics: any = null;
   let loading = true;
 
   onMount(async () => {
-    try {
-      analytics = await api.getAnalytics();
-    } catch (e) {
-      console.error('Failed to load analytics', e);
-    } finally {
-      loading = false;
-    }
+    try { analytics = await api.getAnalytics(); } catch (e) { console.error('Failed to load analytics', e); }
+    finally { loading = false; }
   });
 
   function getBarWidth(value: number, max: number): string {
@@ -34,166 +23,125 @@
 </script>
 
 <div>
-  <div class="mb-6">
-    <h1 class="text-2xl font-bold text-foreground">Analytics</h1>
-    <p class="text-muted-foreground mt-1">Business insights and performance metrics</p>
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Analytics</h1>
+      <p class="page-subtitle">Business insights and performance metrics</p>
+    </div>
   </div>
 
   {#if loading}
-    <div class="flex items-center justify-center h-64">
-      <div class="flex flex-col items-center gap-2 animate-pulse">
-        <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">📊</div>
-        <p class="text-muted-foreground text-sm">Loading analytics...</p>
-      </div>
+    <div class="empty-state">
+      <div class="empty-state-icon">📊</div>
+      <p>Loading analytics...</p>
     </div>
   {:else if analytics}
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      <Card>
-        <CardContent class="p-4">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-xs font-semibold text-muted-foreground uppercase">Total Revenue</span>
-            <span class="text-lg">💰</span>
-          </div>
-          <div class="text-2xl font-bold text-foreground">{formatCurrency(analytics.total_revenue)}</div>
-          <div class="text-xs text-muted-foreground mt-1">From {analytics.paid_bills} paid bills</div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardContent class="p-4">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-xs font-semibold text-muted-foreground uppercase">Today's Revenue</span>
-            <span class="text-lg">📈</span>
-          </div>
-          <div class="text-2xl font-bold text-foreground">{formatCurrency(analytics.today_revenue)}</div>
-          <div class="text-xs text-muted-foreground mt-1">Week: {formatCurrency(analytics.week_revenue)}</div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardContent class="p-4">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-xs font-semibold text-muted-foreground uppercase">Total Inward</span>
-            <span class="text-lg">📥</span>
-          </div>
-          <div class="text-2xl font-bold text-foreground">{analytics.total_inward}</div>
-          <div class="text-xs text-muted-foreground mt-1">{analytics.delivered} delivered</div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardContent class="p-4">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-xs font-semibold text-muted-foreground uppercase">Total Customers</span>
-            <span class="text-lg">👥</span>
-          </div>
-          <div class="text-2xl font-bold text-foreground">{analytics.total_customers}</div>
-          <div class="text-xs text-muted-foreground mt-1">{analytics.total_repairs} repairs, {analytics.completed_repairs} completed</div>
-        </CardContent>
-      </Card>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Total Revenue</div>
+        <div class="stat-value">{formatCurrency(analytics.total_revenue)}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Today's Revenue</div>
+        <div class="stat-value">{formatCurrency(analytics.today_revenue)}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total Inward</div>
+        <div class="stat-value">{analytics.total_inward}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total Customers</div>
+        <div class="stat-value">{analytics.total_customers}</div>
+      </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-      <Card>
-        <CardHeader>
-          <CardTitle class="text-sm">Revenue - Last 7 Days</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div class="space-y-3">
-            {#each analytics.revenue_by_day as day}
-              <div class="flex items-center gap-3">
-                <span class="text-xs text-muted-foreground w-20">{day.date.slice(5)}</span>
-                <div class="flex-1 bg-muted rounded-full h-6 overflow-hidden">
-                  <div class="bg-blue-500 h-full rounded-full transition-all" style="width: {getBarWidth(day.amount, maxRevenue())}"></div>
-                </div>
-                <span class="text-xs font-medium text-foreground w-20 text-right">{formatCurrency(day.amount)}</span>
-              </div>
-            {/each}
+    <div class="card" style="margin-bottom:1.5rem;">
+      <div class="card-header">
+        <h3 class="card-title">Revenue - Last 7 Days</h3>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:0.75rem;">
+        {#each analytics.revenue_by_day as day}
+          <div style="display:flex; align-items:center; gap:0.75rem;">
+            <span style="font-size:0.75rem; color:var(--text-muted); width:3rem;">{day.date.slice(5)}</span>
+            <div style="flex:1; background:var(--surface-alt); border-radius:9999px; height:1.5rem; overflow:hidden;">
+              <div style="background:var(--primary); height:100%; border-radius:9999px; transition:width 0.3s; width:{getBarWidth(day.amount, maxRevenue())};"></div>
+            </div>
+            <span style="font-size:0.75rem; font-weight:600; width:5rem; text-align:right;">{formatCurrency(day.amount)}</span>
           </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle class="text-sm">Status Distribution</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div class="space-y-3">
-            {#each analytics.status_distribution as item}
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                  <span class="text-sm font-medium text-foreground capitalize">{item.status}</span>
-                </div>
-                <div class="flex items-center gap-3">
-                  <div class="w-32 bg-muted rounded-full h-2 overflow-hidden">
-                    <div class="bg-blue-500 h-full rounded-full" style="width: {item.count / analytics.total_inward * 100}%"></div>
-                  </div>
-                  <span class="text-sm font-bold text-foreground w-8 text-right">{item.count}</span>
-                </div>
-              </div>
-            {/each}
-          </div>
-        </CardContent>
-      </Card>
+        {/each}
+      </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle class="text-sm">Payment Status</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div class="space-y-3">
-            {#each analytics.payment_distribution as item}
-              <div class="flex items-center justify-between">
-                <span class="text-sm text-muted-foreground capitalize">{item.status}</span>
-                <Badge variant={item.status === 'paid' ? 'secondary' : 'outline'} class="text-xs">{item.count}</Badge>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:1.5rem;">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Status Distribution</h3>
+        </div>
+        {#each analytics.status_distribution as item}
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem;">
+            <span style="font-size:0.875rem; text-transform:capitalize;">{item.status}</span>
+            <div style="display:flex; align-items:center; gap:0.75rem;">
+              <div style="width:6rem; background:var(--surface-alt); border-radius:9999px; height:0.5rem; overflow:hidden;">
+                <div style="background:var(--primary); height:100%; border-radius:9999px; width:{item.count / analytics.total_inward * 100}%;"></div>
               </div>
-            {/each}
+              <span style="font-size:0.875rem; font-weight:700; width:2rem; text-align:right;">{item.count}</span>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        {/each}
+      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle class="text-sm">Device Types</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div class="space-y-3">
-            {#each analytics.device_type_distribution as item}
-              <div class="flex items-center justify-between">
-                <span class="text-sm text-muted-foreground capitalize">{item.device_type}</span>
-                <Badge variant="outline" class="text-xs">{item.count}</Badge>
-              </div>
-            {/each}
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Payment Status</h3>
+        </div>
+        {#each analytics.payment_distribution as item}
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem;">
+            <span style="font-size:0.875rem; text-transform:capitalize;">{item.status}</span>
+            <span class="badge {item.status === 'paid' ? 'badge-ready' : 'badge-pending'}">{item.count}</span>
           </div>
-        </CardContent>
-      </Card>
+        {/each}
+      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle class="text-sm">Quotations</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div class="space-y-3">
-            <div class="flex items-center justify-between">
-              <span class="text-sm text-muted-foreground">Total Quotations</span>
-              <Badge variant="outline" class="text-xs">{analytics.total_quotations}</Badge>
-            </div>
-            <div class="flex items-center justify-between">
-              <span class="text-sm text-muted-foreground">CCTV Quotes</span>
-              <Badge variant="outline" class="text-xs">{analytics.total_cctv_quotes}</Badge>
-            </div>
-            <div class="flex items-center justify-between">
-              <span class="text-sm text-muted-foreground">Laptop Quotes</span>
-              <Badge variant="outline" class="text-xs">{analytics.total_laptop_quotes}</Badge>
-            </div>
-            <div class="flex items-center justify-between">
-              <span class="text-sm text-muted-foreground">Parts Sold</span>
-              <Badge variant="outline" class="text-xs">{analytics.parts_sold}</Badge>
-            </div>
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Device Types</h3>
+        </div>
+        {#each analytics.device_type_distribution as item}
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem;">
+            <span style="font-size:0.875rem; text-transform:capitalize;">{item.device_type}</span>
+            <span class="badge badge-draft">{item.count}</span>
           </div>
-        </CardContent>
-      </Card>
+        {/each}
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Quotations</h3>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem;">
+          <span style="font-size:0.875rem; color:var(--text-secondary);">Total Quotations</span>
+          <span class="badge badge-draft">{analytics.total_quotations}</span>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem;">
+          <span style="font-size:0.875rem; color:var(--text-secondary);">CCTV Quotes</span>
+          <span class="badge badge-draft">{analytics.total_cctv_quotes}</span>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem;">
+          <span style="font-size:0.875rem; color:var(--text-secondary);">Laptop Quotes</span>
+          <span class="badge badge-draft">{analytics.total_laptop_quotes}</span>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem;">
+          <span style="font-size:0.875rem; color:var(--text-secondary);">Parts Sold</span>
+          <span class="badge badge-draft">{analytics.parts_sold}</span>
+        </div>
+      </div>
     </div>
   {:else}
-    <div class="text-center py-12 text-muted-foreground">Failed to load analytics data.</div>
+    <div class="empty-state">
+      <div class="empty-state-icon">📊</div>
+      <p>Failed to load analytics data.</p>
+    </div>
   {/if}
 </div>
+EOF
+echo "Done"

@@ -2,15 +2,6 @@
   import { onMount } from 'svelte';
   import { api } from '../lib/api';
   import { formatCurrency } from '../lib/utils';
-  import Card from '$lib/components/ui/card.svelte';
-  import CardContent from '$lib/components/ui/card-content.svelte';
-  import CardHeader from '$lib/components/ui/card-header.svelte';
-  import CardTitle from '$lib/components/ui/card-title.svelte';
-  import Badge from '$lib/components/ui/badge.svelte';
-  import Button from '$lib/components/ui/button.svelte';
-  import Input from '$lib/components/ui/input.svelte';
-  import Label from '$lib/components/ui/label.svelte';
-  import Dialog from '$lib/components/ui/dialog.svelte';
 
   let parts: any[] = [];
   let showForm = false;
@@ -31,28 +22,16 @@
   onMount(loadData);
 
   async function loadData() {
-    try {
-      parts = await api.getParts();
-    } catch (e) {
-      console.error('Failed to load parts', e);
-    }
+    try { parts = await api.getParts(); } catch (e) { console.error('Failed to load parts', e); }
   }
 
   async function createPart() {
-    if (!formName || !formSellingPrice) {
-      alert('Please enter part name and selling price');
-      return;
-    }
+    if (!formName || !formSellingPrice) { alert('Please enter part name and selling price'); return; }
     try {
       await api.createPart(formName, formCategory || null, formDescription || null, formPurchasePrice, formSellingPrice, formStock, formCompatible || null);
       showForm = false;
-      formName = '';
-      formCategory = '';
-      formDescription = '';
-      formPurchasePrice = 0;
-      formSellingPrice = 0;
-      formStock = 0;
-      formCompatible = '';
+      formName = ''; formCategory = ''; formDescription = '';
+      formPurchasePrice = 0; formSellingPrice = 0; formStock = 0; formCompatible = '';
       await loadData();
     } catch (e: any) {
       console.error('Failed to create part', e);
@@ -61,10 +40,7 @@
   }
 
   async function sellPart() {
-    if (!saleCustomerName) {
-      alert('Please enter customer name');
-      return;
-    }
+    if (!saleCustomerName) { alert('Please enter customer name'); return; }
     try {
       await api.createPartSale(salePartId, null, saleCustomerName, saleQty, salePrice);
       showSale = false;
@@ -76,17 +52,13 @@
   }
 
   function openSale(p: any) {
-    salePartId = p.id;
-    salePrice = p.selling_price;
-    saleQty = 1;
-    saleCustomerName = '';
-    showSale = true;
+    salePartId = p.id; salePrice = p.selling_price; saleQty = 1; saleCustomerName = ''; showSale = true;
   }
 
   function getStockBadge(qty: number) {
-    if (qty === 0) return 'bg-destructive text-destructive-foreground';
-    if (qty < 5) return 'bg-yellow-100 text-yellow-800';
-    return 'bg-green-100 text-green-800';
+    if (qty === 0) return 'badge-delivered';
+    if (qty < 5) return 'badge-pending';
+    return 'badge-ready';
   }
 
   function getStockLabel(qty: number) {
@@ -97,101 +69,82 @@
 </script>
 
 <div>
-  <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
+  <div class="page-header">
     <div>
-      <h1 class="text-2xl font-bold text-foreground">Parts Inventory</h1>
-      <p class="text-muted-foreground mt-1">Manage spare parts stock and sales</p>
+      <h1 class="page-title">Parts Inventory</h1>
+      <p class="page-subtitle">Manage spare parts stock and sales</p>
     </div>
-    <Button variant="default" on:click={() => showForm = true}>
-      <span class="mr-2">+</span> Add Part
-    </Button>
+    <button class="btn btn-primary" on:click={() => showForm = true}>+ Add Part</button>
   </div>
 
-  <Card>
-    <CardContent class="p-0">
-      <div class="overflow-x-auto -mx-4 sm:mx-0">
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="border-b border-border text-left text-xs font-semibold text-muted-foreground">
-              <th class="py-3">Part Name</th>
-              <th class="w-32 py-3">Category</th>
-              <th class="w-24 py-3 text-center">Stock</th>
-              <th class="w-24 py-3 text-right">Purchase Price</th>
-              <th class="w-24 py-3 text-right">Selling Price</th>
-              <th class="w-32 py-3 text-right">Actions</th>
+  <div class="card">
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr><th>Part Name</th><th>Category</th><th>Stock</th><th>Purchase</th><th>Selling</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          {#each parts as p}
+            <tr>
+              <td class="font-medium">{p.name}</td>
+              <td>{p.category || '-'}</td>
+              <td>
+                <span class="badge {getStockBadge(p.stock_quantity)}">{p.stock_quantity}</span>
+                <div style="font-size:0.7rem; color:var(--text-muted); margin-top:0.125rem;">{getStockLabel(p.stock_quantity)}</div>
+              </td>
+              <td>{formatCurrency(p.purchase_price)}</td>
+              <td class="font-medium">{formatCurrency(p.selling_price)}</td>
+              <td><button class="btn btn-success btn-sm" on:click={() => openSale(p)}>Sell</button></td>
             </tr>
-          </thead>
-          <tbody>
-            {#each parts as p}
-              <tr class="hover:bg-muted transition-colors border-b border-border last:border-0">
-                <td class="py-3 text-sm font-medium text-foreground">{p.name}</td>
-                <td class="py-3 text-sm text-muted-foreground">{p.category || '-'}</td>
-                <td class="py-3 text-center">
-                    <span class={`${getStockBadge(p.stock_quantity)} text-xs font-bold`}>{p.stock_quantity}</span>
-                  <div class="text-[10px] text-muted-foreground">{getStockLabel(p.stock_quantity)}</div>
-                </td>
-                <td class="py-3 text-sm text-muted-foreground text-right">{formatCurrency(p.purchase_price)}</td>
-                <td class="py-3 text-sm font-medium text-foreground text-right">{formatCurrency(p.selling_price)}</td>
-                <td class="py-3 text-right">
-                  <Button variant="secondary" size="sm" class="px-3" on:click={() => openSale(p)}>Sell</Button>
-                </td>
-              </tr>
-            {:else}
-              <tr>
-                <td colspan="6" class="py-8 text-center text-muted-foreground">No parts found. Add your first part.</td>
-              </tr>
-            {/each}
-          </tbody>
-        </table>
-      </div>
-    </CardContent>
-  </Card>
+          {:else}
+            <tr><td colspan="6" class="empty-state">No parts found. Add your first part.</td></tr>
+          {/each}
+        </tbody>
+      </table>
+    </div>
+  </div>
 
   {#if showForm}
-    <div class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" >
-      <div class="bg-background border border-input rounded-xl shadow-xl w-full max-w-md p-6" role="dialog" aria-modal="true">
-        <div class="flex justify-between items-start mb-4">
-          <h2 class="text-lg font-bold text-foreground">Add Part</h2>
-          <button on:click={() => showForm = false} class="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
-            <span class="sr-only">Close</span>
-            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293-4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
-          </button>
+    <div class="modal-overlay" on:click|self={() => showForm = false}>
+      <div class="modal">
+        <div class="modal-header">
+          <h2 class="modal-title">Add Part</h2>
+          <button class="modal-close" on:click={() => showForm = false}>&times;</button>
         </div>
-
-        <form on:submit|preventDefault={createPart} class="space-y-4">
-          <div class="space-y-2">
-            <Label>Part Name</Label>
-            <Input bind:value={formName} placeholder="e.g. HP Laptop Screen" required />
+        <form on:submit|preventDefault={createPart}>
+          <div class="form-group">
+            <label class="form-label">Part Name</label>
+            <input class="form-input" bind:value={formName} placeholder="e.g. HP Laptop Screen" />
           </div>
-          <div class="space-y-2">
-            <Label>Category</Label>
-            <Input bind:value={formCategory} placeholder="e.g. Display, Battery" />
+          <div class="form-group">
+            <label class="form-label">Category</label>
+            <input class="form-input" bind:value={formCategory} placeholder="e.g. Display, Battery" />
           </div>
-          <div class="space-y-2">
-            <Label>Description</Label>
-            <Input bind:value={formDescription} placeholder="Part description..." />
+          <div class="form-group">
+            <label class="form-label">Description</label>
+            <input class="form-input" bind:value={formDescription} placeholder="Part description..." />
           </div>
-          <div class="grid grid-cols-2 gap-4">
-            <div class="space-y-2">
-              <Label>Purchase Price (₹)</Label>
-              <Input type="number" bind:value={formPurchasePrice} placeholder="0" />
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+            <div class="form-group">
+              <label class="form-label">Purchase Price (₹)</label>
+              <input class="form-input" type="number" bind:value={formPurchasePrice} placeholder="0" />
             </div>
-            <div class="space-y-2">
-              <Label>Selling Price (₹)</Label>
-              <Input type="number" bind:value={formSellingPrice} placeholder="0" required />
+            <div class="form-group">
+              <label class="form-label">Selling Price (₹)</label>
+              <input class="form-input" type="number" bind:value={formSellingPrice} placeholder="0" />
             </div>
           </div>
-          <div class="space-y-2">
-            <Label>Stock Quantity</Label>
-            <Input type="number" bind:value={formStock} placeholder="0" min="0" />
+          <div class="form-group">
+            <label class="form-label">Stock Quantity</label>
+            <input class="form-input" type="number" bind:value={formStock} placeholder="0" min="0" />
           </div>
-          <div class="space-y-2">
-            <Label>Compatible With</Label>
-            <Input bind:value={formCompatible} placeholder="e.g. Dell XPS 15" />
+          <div class="form-group">
+            <label class="form-label">Compatible With</label>
+            <input class="form-input" bind:value={formCompatible} placeholder="e.g. Dell XPS 15" />
           </div>
-          <div class="flex justify-end gap-3 pt-4">
-            <Button variant="outline" on:click={() => showForm = false}>Cancel</Button>
-            <Button variant="default">Add Part</Button>
+          <div style="display:flex; justify-content:flex-end; gap:0.75rem; padding-top:1rem;">
+            <button type="button" class="btn btn-secondary" on:click={() => showForm = false}>Cancel</button>
+            <button type="submit" class="btn btn-primary">Add Part</button>
           </div>
         </form>
       </div>
@@ -199,42 +152,37 @@
   {/if}
 
   {#if showSale}
-    <div class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" >
-      <div class="bg-background border border-input rounded-xl shadow-xl w-full max-w-sm p-6" role="dialog" aria-modal="true">
-        <div class="flex justify-between items-start mb-4">
-          <h2 class="text-lg font-bold text-foreground">Sell Part</h2>
-          <button on:click={() => showSale = false} class="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
-            <span class="sr-only">Close</span>
-            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293-4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
-          </button>
+    <div class="modal-overlay" on:click|self={() => showSale = false}>
+      <div class="modal" style="max-width:24rem;">
+        <div class="modal-header">
+          <h2 class="modal-title">Sell Part</h2>
+          <button class="modal-close" on:click={() => showSale = false}>&times;</button>
         </div>
-
-        <div class="space-y-4">
-          <div class="space-y-2">
-            <Label>Customer Name</Label>
-            <Input bind:value={saleCustomerName} placeholder="Customer name" required />
-          </div>
-          <div class="space-y-2">
-            <Label>Quantity</Label>
-            <Input type="number" bind:value={saleQty} min="1" required />
-          </div>
-          <div class="space-y-2">
-            <Label>Unit Price (₹)</Label>
-            <Input type="number" bind:value={salePrice} required />
-          </div>
-          <div class="pt-2 border-t border-border">
-            <div class="flex justify-between text-sm">
-              <span class="text-muted-foreground">Total</span>
-              <span class="text-lg font-bold text-primary">{formatCurrency(saleQty * salePrice)}</span>
-            </div>
+        <div class="form-group">
+          <label class="form-label">Customer Name</label>
+          <input class="form-input" bind:value={saleCustomerName} placeholder="Customer name" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Quantity</label>
+          <input class="form-input" type="number" bind:value={saleQty} min="1" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Unit Price (₹)</label>
+          <input class="form-input" type="number" bind:value={salePrice} />
+        </div>
+        <div style="padding:0.75rem; background:var(--surface-alt); border-radius:0.5rem; margin-bottom:1rem;">
+          <div style="display:flex; justify-content:space-between; font-size:0.875rem;">
+            <span style="color:var(--text-secondary);">Total</span>
+            <span style="font-size:1.125rem; font-weight:700; color:var(--primary);">{formatCurrency(saleQty * salePrice)}</span>
           </div>
         </div>
-
-        <div class="flex justify-end gap-3 pt-4">
-          <Button variant="outline" on:click={() => showSale = false}>Cancel</Button>
-          <Button variant="default" on:click={sellPart}>Record Sale</Button>
+        <div style="display:flex; justify-content:flex-end; gap:0.75rem;">
+          <button type="button" class="btn btn-secondary" on:click={() => showSale = false}>Cancel</button>
+          <button class="btn btn-success" on:click={sellPart}>Record Sale</button>
         </div>
       </div>
     </div>
   {/if}
 </div>
+EOF
+echo "Done"
