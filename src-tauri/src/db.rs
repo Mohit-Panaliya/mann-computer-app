@@ -1,18 +1,20 @@
 use rusqlite::{Connection, params};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use chrono::Local;
+use serde_json::json;
 
 pub type DbResult<T> = Result<T, String>;
 
 pub struct Db {
     pub conn: Mutex<Connection>,
+    pub db_path: PathBuf,
 }
 
 impl Db {
     pub fn new(db_path: PathBuf) -> DbResult<Self> {
         let conn = Connection::open(&db_path).map_err(|e| e.to_string())?;
-        let db = Db { conn: Mutex::new(conn) };
+        let db = Db { conn: Mutex::new(conn), db_path: db_path.clone() };
         db.init()?;
         Ok(db)
     }
@@ -242,6 +244,54 @@ impl Db {
     pub fn set_setting(&self, key: &str, value: &str) -> DbResult<()> {
         let conn = self.lock_conn()?;
         conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)", params![key, value]).map_err(|e| e.to_string())?;
+        Ok(())
+    }
+
+    pub fn backup_database(&self) -> DbResult<String> {
+        let conn = self.lock_conn()?;
+        // Ensure all data is flushed to disk
+        conn.execute("PRAGMA wal_checkpoint(FULL)", []).map_err(|e| e.to_string())?;
+        drop(conn);
+
+        let backup_path = self.db_path.with_extension(format!(
+            "backup_{}.db",
+            chrono::Local::now().format("%Y%m%d_%H%M%S")
+        ));
+        std::fs::copy(&self.db_path, &backup_path).map_err(|e| format!("Failed to backup database: {}", e))?;
+        Ok(backup_path.to_string_lossy().to_string())
+    }
+
+    pub fn restore_database(&self, backup_path: &Path) -> DbResult<()> {
+        if !backup_path.exists() {
+            return Err(format!("Backup file not found: {}", backup_path.display()));
+        }
+        let conn = self.lock_conn()?;
+        drop(conn);
+        std::fs::copy(backup_path, &self.db_path).map_err(|e| format!("Failed to restore database: {}", e))?;
+        Ok(())
+    }
+
+    pub fn export_settings(&self) -> DbResult<String> {
+        let conn = self.lock_conn()?;
+        let mut stmt = conn.prepare("SELECT key, value FROM settings").map_err(|e| e.to_string())?;
+        let rows = stmt.query_map([], |row| {
+            Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+        }).map_err(|e| e.to_string())?;
+        let mut settings = std::collections::HashMap::new();
+        for row in rows {
+            let (k, v) = row.map_err(|e| e.to_string())?;
+            settings.insert(k, v);
+        }
+        serde_json::to_string_pretty(&settings).map_err(|e| format!("Failed to export settings: {}", e))
+    }
+
+    pub fn import_settings(&self, settings_json: &str) -> DbResult<()> {
+        let settings: std::collections::HashMap<String, String> = serde_json::from_str(&settings_json)
+            .map_err(|e| format!("Failed to parse settings JSON: {}", e))?;
+        let conn = self.lock_conn()?;
+        for (key, value) in settings {
+            conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)", params![key, value]).map_err(|e| format!("Failed to import setting {}: {}", key, e))?;
+        }
         Ok(())
     }
 }

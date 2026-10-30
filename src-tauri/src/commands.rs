@@ -2,7 +2,7 @@ use tauri::State;
 use rusqlite::params;
 use uuid::Uuid;
 use chrono::Local;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use crate::db::Db;
@@ -574,23 +574,12 @@ pub fn update_setting(state: State<AppState>, key: String, value: String) -> Res
 
 #[tauri::command]
 pub fn backup_database(state: State<AppState>) -> Result<String, String> {
-    let conn = state.db.lock_conn().map_err(|e| e.to_string())?;
-    let backup_dir = state.db.get_setting("backup_dir").ok().flatten().unwrap_or_else(|| "/tmp".to_string());
-    let backup_path = format!("{}/mann_computer_backup_{}.db", backup_dir, Local::now().format("%Y%m%d_%H%M%S"));
-    conn.execute(&format!("VACUUM INTO '{}'", backup_path), []).map_err(|e| format!("Backup failed: {}", e))?;
-    Ok(backup_path)
+    state.db.backup_database()
 }
 
 #[tauri::command]
 pub fn restore_database(state: State<AppState>, backup_path: String) -> Result<(), String> {
-    if !std::path::Path::new(&backup_path).exists() {
-        return Err("Backup file not found".to_string());
-    }
-    let conn = state.db.lock_conn().map_err(|e| e.to_string())?;
-    // Close current connection and copy backup
-    drop(conn);
-    std::fs::copy(&backup_path, "mann_computer.db").map_err(|e| format!("Restore failed: {}", e))?;
-    Ok(())
+    state.db.restore_database(Path::new(&backup_path))
 }
 
 #[tauri::command]
