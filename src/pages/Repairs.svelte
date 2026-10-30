@@ -86,7 +86,7 @@
 
   <Card>
     <CardContent class="p-0">
-      <div class="overflow-x-auto">
+      <div class="overflow-x-auto -mx-4 sm:mx-0">
         <table class="w-full text-sm">
           <thead>
             <tr class="border-b border-border text-left text-xs font-semibold text-muted-foreground">
